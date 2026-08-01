@@ -1,15 +1,6 @@
-/*
-  Hospital Patient Visits Analytics
-  Step 01: reset and create the raw source schema.
-
-  Target platform: Microsoft SQL Server 2019+
-  The full pipeline is intentionally rerunnable from run_all.sql.
-*/
-
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
--- Drop downstream objects first so foreign-key dependencies are respected.
 DROP TABLE IF EXISTS dbo.PatientVisits;
 DROP TABLE IF EXISTS dbo.Dim_Patient_Clean;
 DROP TABLE IF EXISTS dbo.Dim_Department_Clean;

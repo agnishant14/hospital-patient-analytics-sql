@@ -1,5 +1,1 @@
-# Optional. Only the two drawing scripts need this:
-#   scripts/generate_executive_summary.py -> results/executive_summary.png
-#   scripts/generate_erd.py               -> diagrams/database_diagram.png
-# The pipeline, the oracle and all five verifiers use the standard library only.
 matplotlib>=3.8,<4

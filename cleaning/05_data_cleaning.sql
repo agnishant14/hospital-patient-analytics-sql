@@ -1,26 +1,6 @@
-/*
-  Step 05: clean dimensions and consolidate the yearly visit tables into the
-  analytics-ready star schema.
-*/
-
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
-/*
-  Variant city spellings, mapped to the spelling the dimension should use.
-
-  This is a lookup table rather than a CASE expression in the query below, for
-  two reasons. Adding the next variant is an INSERT, not an edit to
-  transformation logic that is already tested. And the table is queryable, so
-  validation/08 can ask "is every near-duplicate spelling accounted for here?"
-  -- which is the check that finds variant number two, whenever it arrives.
-
-  The one row is not a placeholder. Two of the 2,431 patients are recorded in
-  'Chennnai'; three are in 'Chennai'. Nothing in the published analysis groups
-  by city, so twelve queries all return correct answers over a dimension that
-  quietly contains two cities where there is one. That is the argument for
-  cleaning attributes you are not currently reporting on.
-*/
 CREATE TABLE dbo.Ref_CityAlias (
     Variant   VARCHAR(50) NOT NULL PRIMARY KEY,
     Canonical VARCHAR(50) NOT NULL,
@@ -42,15 +22,6 @@ CREATE TABLE dbo.Dim_Patient_Clean (
         CHECK (Gender IN ('Male', 'Female'))
 );
 
-/*
-  PARSENAME splits on dots and counts parts from the right, so replacing the
-  commas turns 'Chennai, Tamil Nadu, India' into a three-part name and part 3
-  is the city. It is the shortest way to split a fixed-arity string in T-SQL,
-  and it caps out at four parts, which is fine for city/state/country.
-
-  Parsing happens in the CTE so the split runs once and the alias join has a
-  column to attach to, rather than repeating the expression in a JOIN clause.
-*/
 WITH Parsed AS (
     SELECT
         p.PatientID,

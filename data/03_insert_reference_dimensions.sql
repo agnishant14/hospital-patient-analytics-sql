@@ -1,4 +1,3 @@
--- Inserts for Dim_Department
 INSERT INTO dbo.Dim_Department (DepartmentID, DepartmentName, DepartmentCategory, Specialization, HOD) VALUES ('DEP01', 'Dept- Cardiology', 'Internal Medicine', 'Cardiology', 'yet to fill');
 INSERT INTO dbo.Dim_Department (DepartmentID, DepartmentName, DepartmentCategory, Specialization, HOD) VALUES ('DEP02', 'Dept- Neurology', 'Internal Medicine', 'Neurology', 'yet to fill');
 INSERT INTO dbo.Dim_Department (DepartmentID, DepartmentName, DepartmentCategory, Specialization, HOD) VALUES ('DEP03', 'Dept- Orthopedics', 'Surgical Specialties', 'Orthopedics', 'yet to fill');
@@ -40,7 +39,6 @@ INSERT INTO dbo.Dim_Department (DepartmentID, DepartmentName, DepartmentCategory
 INSERT INTO dbo.Dim_Department (DepartmentID, DepartmentName, DepartmentCategory, Specialization, HOD) VALUES ('DEP39', 'Dept- ', NULL, NULL, 'yet to fill');
 INSERT INTO dbo.Dim_Department (DepartmentID, DepartmentName, DepartmentCategory, Specialization, HOD) VALUES ('DEP40', 'Dept- ', NULL, NULL, 'yet to fill');
 
--- Inserts for Dim_Diagnosis
 INSERT INTO dbo.Dim_Diagnosis (DiagnosisID, DiagnosisName) VALUES ('DX01', 'Hypertension');
 INSERT INTO dbo.Dim_Diagnosis (DiagnosisID, DiagnosisName) VALUES ('DX02', 'Type 2 Diabetes Mellitus');
 INSERT INTO dbo.Dim_Diagnosis (DiagnosisID, DiagnosisName) VALUES ('DX03', 'Acute Bronchitis');
@@ -82,7 +80,6 @@ INSERT INTO dbo.Dim_Diagnosis (DiagnosisID, DiagnosisName) VALUES ('DX38', 'Obse
 INSERT INTO dbo.Dim_Diagnosis (DiagnosisID, DiagnosisName) VALUES ('DX39', 'Chronic Fatigue Syndrome');
 INSERT INTO dbo.Dim_Diagnosis (DiagnosisID, DiagnosisName) VALUES ('DX40', 'Allergic Rhinitis');
 
--- Inserts for Dim_Treatment
 INSERT INTO dbo.Dim_Treatment (TreatmentID, TreatmentName) VALUES ('TR01', 'ECG');
 INSERT INTO dbo.Dim_Treatment (TreatmentID, TreatmentName) VALUES ('TR02', 'Blood Sugar Test');
 INSERT INTO dbo.Dim_Treatment (TreatmentID, TreatmentName) VALUES ('TR03', 'MRI Scan');
@@ -114,7 +111,6 @@ INSERT INTO dbo.Dim_Treatment (TreatmentID, TreatmentName) VALUES ('TR28', 'Occu
 INSERT INTO dbo.Dim_Treatment (TreatmentID, TreatmentName) VALUES ('TR29', 'Vaccination');
 INSERT INTO dbo.Dim_Treatment (TreatmentID, TreatmentName) VALUES ('TR30', 'Pain Management Injection');
 
--- Inserts for Dim_PaymentMethod
 INSERT INTO dbo.Dim_PaymentMethod (PaymentMethodID, PaymentMethod) VALUES ('PM01', 'Cash');
 INSERT INTO dbo.Dim_PaymentMethod (PaymentMethodID, PaymentMethod) VALUES ('PM02', 'Debit Card');
 INSERT INTO dbo.Dim_PaymentMethod (PaymentMethodID, PaymentMethod) VALUES ('PM03', 'Credit Card');

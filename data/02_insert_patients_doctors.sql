@@ -1,6 +1,3 @@
-
-
--- Inserts for Dim_Patient
 INSERT INTO dbo.Dim_Patient (PatientID, FirstName, LastName, Gender, DOB, CityStateCountry) VALUES ('P0001', ' abhay', '   patel', 'M', '2011-01-19', 'Ahmedabad, Gujarat, India');
 INSERT INTO dbo.Dim_Patient (PatientID, FirstName, LastName, Gender, DOB, CityStateCountry) VALUES ('P0002', 'taizoon', '       khan', 'M', '1997-06-21', 'Nizamabad, Telangana, India');
 INSERT INTO dbo.Dim_Patient (PatientID, FirstName, LastName, Gender, DOB, CityStateCountry) VALUES ('P0003', 'Ajay', 'Verma', 'M', '2011-02-28', 'Amritsar, Punjab, India');
@@ -2438,7 +2435,6 @@ INSERT INTO dbo.Dim_Patient (PatientID, FirstName, LastName, Gender, DOB, CitySt
 INSERT INTO dbo.Dim_Patient (PatientID, FirstName, LastName, Gender, DOB, CityStateCountry) VALUES ('P2430', 'Neha', 'Singh', 'Female', '1970-03-04', 'Lucknow, Uttar Pradesh, India');
 INSERT INTO dbo.Dim_Patient (PatientID, FirstName, LastName, Gender, DOB, CityStateCountry) VALUES ('P2431', 'Rohan', 'Reddy', 'Male', '1952-05-13', 'Kanpur, Uttar Pradesh, India');
 
--- Inserts for Dim_Doctor
 INSERT INTO dbo.Dim_Doctor (DoctorID, FirstName, LastName, Gender, ExperienceYears) VALUES ('D001', 'Dr. Anita', 'Gupta', 'Female', 17);
 INSERT INTO dbo.Dim_Doctor (DoctorID, FirstName, LastName, Gender, ExperienceYears) VALUES ('D002', 'Dr. Vikram', 'Patel', 'Male', 3);
 INSERT INTO dbo.Dim_Doctor (DoctorID, FirstName, LastName, Gender, ExperienceYears) VALUES ('D003', 'Dr. Raj', 'Joshi', 'Male', 33);

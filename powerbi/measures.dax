@@ -1,40 +1,3 @@
-// =============================================================================
-//  Hospital Patient Visits -- DAX library
-// =============================================================================
-//
-//  One DAX definition for every figure the T-SQL layer publishes, so the report
-//  and the warehouse cannot drift. Each block names the query it mirrors; run
-//  that query (or open exports/qNN_*.csv) to see the number this should return.
-//
-//  Order matters. Build the Date table first, then the calculated columns, then
-//  the measures -- later definitions reference earlier ones.
-//
-//  Two ways to load it:
-//    * By hand, in Power BI Desktop. Modeling > New measure, paste one block.
-//    * In bulk, with Tabular Editor 2 (free). See powerbi/README.md.
-//
-//  Conventions used throughout:
-//    * DIVIDE(), never "/". DIVIDE returns BLANK on a zero denominator, which
-//      is the DAX equivalent of the NULLIF() guards in the SQL.
-//    * KEEPFILTERS() on predicate filters, so a CALCULATE narrows the user's
-//      selection instead of replacing it.
-//    * Percentages are returned as ratios (0.2000, not 20.00) and formatted as
-//      percent in the model. The CSVs store them as 20.00 -- same number, one
-//      is presentation.
-//
-// =============================================================================
-
-
-// -----------------------------------------------------------------------------
-//  1. Date table                                          calculated table
-// -----------------------------------------------------------------------------
-//  Nothing in exports/ is a date dimension, and time intelligence will not work
-//  without one: DAX needs a contiguous, gap-free date column it can mark as the
-//  model's date table. Generating it here beats shipping another CSV, because
-//  it cannot fall out of sync with the fact table's range.
-//
-//  After creating it: Table tools > Mark as date table > Date.
-
 Date =
 VAR Days =
     CALENDAR ( DATE ( 2020, 1, 1 ), DATE ( 2025, 12, 31 ) )
@@ -50,29 +13,6 @@ RETURN
         "Day Type", IF ( WEEKDAY ( [Date], 2 ) >= 6, "Weekend", "Weekday" )
     )
 
-//  WEEKDAY's second argument is the week-start convention, and it is the whole
-//  ballgame here. Type 2 numbers Monday as 1 through Sunday as 7, so ">= 6" is
-//  Saturday and Sunday. Type 1 (the default) numbers Sunday as 1, which would
-//  quietly classify Sunday as a weekday and Friday as a weekend. The SQL uses
-//  DATEPART(WEEKDAY, ...) under SET DATEFIRST 1, which is the same convention
-//  as type 2. Expect 14,283 weekend visits; if you get a different number, the
-//  convention is wrong.
-
-//  Set these after the table exists:
-//    'Date'[Month Name]  Sort by column -> 'Date'[Month Number]
-//    'Date'[Year Month]  Sort by column -> 'Date'[Month Start]
-//    'Date'[Day Name]    Sort by column -> a WEEKDAY([Date], 2) column if you
-//                        add one; otherwise the axis sorts alphabetically.
-
-
-// -----------------------------------------------------------------------------
-//  2. Calculated columns on 'Fact Visits'
-// -----------------------------------------------------------------------------
-//  Age has to be a column, not a measure: it is an attribute of the visit that
-//  the user slices by. It also has to be age *at the visit*, not age today --
-//  a patient born in 2011 was a child for their 2020 visits and is not one for
-//  their 2025 ones. Mirrors q05_age_band.sql.
-
 Age At Visit =
 VAR Birth = RELATED ( 'Patient'[DOB] )
 VAR Visit = 'Fact Visits'[VisitDate]
@@ -83,12 +23,6 @@ VAR BirthdayHasPassed =
 RETURN
     ElapsedYears - IF ( BirthdayHasPassed, 0, 1 )
 
-//  DATEDIFF ( Birth, Visit, YEAR ) is the tempting one-liner and it is wrong:
-//  it counts calendar-year boundaries crossed, so 2000-12-31 to 2001-01-01 comes
-//  back as one year. The subtraction above is the birthday-adjusted rule the
-//  SQL and the Python oracle both use.
-
-
 Age Band =
 SWITCH (
     TRUE (),
@@ -97,10 +31,6 @@ SWITCH (
     'Fact Visits'[Age At Visit] <= 55, "36-55",
     "56+"
 )
-
-
-//  Without this, every age axis in the report reads 0-17, 18-35, 36-55, 56+ in
-//  alphabetical order, which puts 0-17 first by luck and 56+ second by mistake.
 
 Age Band Order =
 SWITCH (
@@ -111,60 +41,32 @@ SWITCH (
     4
 )
 
-//  Then: select 'Fact Visits'[Age Band], Sort by column -> [Age Band Order].
-
-
-// -----------------------------------------------------------------------------
-//  3. Core volume and money                       folder: 01 Core
-// -----------------------------------------------------------------------------
-//  q01_operating_kpis.sql
-
 Total Visits =
 COUNTROWS ( 'Fact Visits' )
-
 
 Distinct Patients =
 DISTINCTCOUNT ( 'Fact Visits'[PatientID] )
 
-
 Total Revenue =
 SUM ( 'Fact Visits'[BillAmount] )
-
 
 Insurance Covered =
 SUM ( 'Fact Visits'[InsuranceAmount] )
 
-
-//  What the patient is actually out of pocket for -- the gap the finance side
-//  cares about and the only figure here that is a difference of two others.
-
 Patient Paid =
 [Total Revenue] - [Insurance Covered]
-
 
 Insurance Coverage % =
 DIVIDE ( [Insurance Covered], [Total Revenue] )
 
-
 Average Bill =
 DIVIDE ( [Total Revenue], [Total Visits] )
-
 
 Average Wait Minutes =
 AVERAGE ( 'Fact Visits'[WaitTimeMinutes] )
 
-
 Average Satisfaction =
 AVERAGE ( 'Fact Visits'[SatisfactionScore] )
-
-//  AVERAGE returns BLANK over an empty selection rather than erroring, so these
-//  two need no DIVIDE guard.
-
-
-// -----------------------------------------------------------------------------
-//  4. Service quality                             folder: 02 Service
-// -----------------------------------------------------------------------------
-//  q07_department_service_risk.sql
 
 Seen Within 30 Min =
 CALCULATE (
@@ -172,10 +74,8 @@ CALCULATE (
     KEEPFILTERS ( 'Fact Visits'[WaitTimeMinutes] <= 30 )
 )
 
-
 Seen Within 30 Min % =
 DIVIDE ( [Seen Within 30 Min], [Total Visits] )
-
 
 Satisfied Visits =
 CALCULATE (
@@ -183,32 +83,17 @@ CALCULATE (
     KEEPFILTERS ( 'Fact Visits'[SatisfactionScore] >= 4 )
 )
 
-
 Satisfied % =
 DIVIDE ( [Satisfied Visits], [Total Visits] )
-
 
 Median Wait Minutes =
 MEDIAN ( 'Fact Visits'[WaitTimeMinutes] )
 
-
 Wait P10 Minutes =
 PERCENTILE.INC ( 'Fact Visits'[WaitTimeMinutes], 0.10 )
 
-
 Wait P90 Minutes =
 PERCENTILE.INC ( 'Fact Visits'[WaitTimeMinutes], 0.90 )
-
-//  PERCENTILE.INC interpolates between the two neighbouring values; the web
-//  dashboard uses the nearest-rank convention instead, because it reads its
-//  percentiles off an integer histogram. On 50,000 rows the two agree to within
-//  a minute, but they are different definitions and will not always tie out to
-//  the decimal. Pick one per report and say which.
-
-
-//  The triage board's colour rule, ported so the Power BI matrix can use the
-//  same ramp. Each threshold is where the seeded data drops a satisfaction star.
-//  Use it under Conditional formatting > Background colour > Field value.
 
 Wait Band Colour =
 VAR Wait = [Average Wait Minutes]
@@ -223,23 +108,6 @@ RETURN
         "#AE3B49"
     )
 
-
-// -----------------------------------------------------------------------------
-//  5. Growth                                      folder: 03 Growth
-// -----------------------------------------------------------------------------
-//  q02_annual_growth.sql -- the SQL is LAG(...) OVER (ORDER BY VisitYear), so
-//  the comparison is year bucket against year bucket.
-//
-//  Note what this deliberately does NOT use. The textbook answer is
-//
-//      Visits LY = CALCULATE ( [Total Visits], DATEADD ( 'Date'[Date], -1, YEAR ) )
-//
-//  and on this dataset it is wrong. DATEADD shifts each date back individually,
-//  and 2021 has no 29 February to map 2020's onto, so the twelve visits dated
-//  2020-02-29 vanish from the comparison. 2021 growth comes out at 20.29% instead
-//  of 20.00%. SAMEPERIODLASTYEAR has the same hole. Filtering the year column
-//  outright is both simpler and exactly what the LAG does.
-
 Visits LY =
 VAR PriorYear = SELECTEDVALUE ( 'Date'[Year] ) - 1
 RETURN
@@ -249,10 +117,8 @@ RETURN
         'Date'[Year] = PriorYear
     )
 
-
 Visit Growth % =
 DIVIDE ( [Total Visits] - [Visits LY], [Visits LY] )
-
 
 Revenue LY =
 VAR PriorYear = SELECTEDVALUE ( 'Date'[Year] ) - 1
@@ -263,14 +129,8 @@ RETURN
         'Date'[Year] = PriorYear
     )
 
-
 Revenue Growth % =
 DIVIDE ( [Total Revenue] - [Revenue LY], [Revenue LY] )
-
-
-//  q09_monthly_trend.sql -- the windowed running total.
-//  ALLSELECTED, not ALL: the line should restart when the user slices to a year
-//  rather than always climbing from January 2020.
 
 Cumulative Visits =
 VAR LastDateInContext = MAX ( 'Date'[Date] )
@@ -283,7 +143,6 @@ RETURN
         )
     )
 
-
 Cumulative Revenue =
 VAR LastDateInContext = MAX ( 'Date'[Date] )
 RETURN
@@ -295,32 +154,17 @@ RETURN
         )
     )
 
-
-// -----------------------------------------------------------------------------
-//  6. Mix and rank                                folder: 04 Mix
-// -----------------------------------------------------------------------------
-//  q04_payment_mix.sql -- share of whatever the visual is currently showing.
-//  ALLSELECTED means the denominator respects slicers but ignores the row, so
-//  the column totals 100% on any breakdown you drop it into.
-
 Revenue Share % =
 DIVIDE (
     [Total Revenue],
     CALCULATE ( [Total Revenue], ALLSELECTED () )
 )
 
-
 Visit Share % =
 DIVIDE (
     [Total Visits],
     CALCULATE ( [Total Visits], ALLSELECTED () )
 )
-
-
-//  q06_department_rank.sql -- revenue rank inside the department's own category,
-//  which is what the SQL's PARTITION BY DepartmentCategory does.
-//  DENSE, to match DENSE_RANK: tied departments share a rank and the next rank
-//  is not skipped.
 
 Revenue Rank in Category =
 VAR PeerDepartments =
@@ -335,7 +179,6 @@ RETURN
         RANKX ( PeerDepartments, [Total Revenue],, DESC, DENSE )
     )
 
-
 Category Revenue Share % =
 DIVIDE (
     [Total Revenue],
@@ -345,28 +188,11 @@ DIVIDE (
     )
 )
 
-
-//  q08_weekday_weekend.sql
-
 Weekend Visits =
 CALCULATE ( [Total Visits], KEEPFILTERS ( 'Date'[Day Type] = "Weekend" ) )
 
-
 Weekend Share % =
 DIVIDE ( [Weekend Visits], [Total Visits] )
-
-
-// -----------------------------------------------------------------------------
-//  7. Patients and doctors                        folder: 05 People
-// -----------------------------------------------------------------------------
-//  q11_repeat_patients.sql
-//
-//  Iterating the Patient dimension rather than the fact table is deliberate.
-//  Relationships run one way here (dimension filters fact), so [Total Visits]
-//  evaluated against a patient row returns that patient's visits *within the
-//  current slice*. Patients with none come back BLANK, and BLANK > 1 is false,
-//  so they drop out on their own. Slice to Cardiology and this correctly becomes
-//  "patients who came to Cardiology more than once".
 
 Repeat Patients =
 COUNTROWS (
@@ -376,33 +202,20 @@ COUNTROWS (
     )
 )
 
-
 Repeat Patient Rate % =
 DIVIDE ( [Repeat Patients], [Distinct Patients] )
-
 
 Visits per Patient =
 DIVIDE ( [Total Visits], [Distinct Patients] )
 
-
-//  q03_doctor_patient_load.sql
-
 Active Doctors =
 DISTINCTCOUNT ( 'Fact Visits'[DoctorID] )
-
 
 Patients per Doctor =
 DIVIDE ( [Distinct Patients], [Active Doctors] )
 
-
 Visits per Doctor =
 DIVIDE ( [Total Visits], [Active Doctors] )
-
-
-//  q10_top_doctors.sql -- rank by satisfaction among doctors with at least 100
-//  visits. The HAVING clause survives here as the [Total Visits] >= 100 guard,
-//  applied twice: once to build the peer set, once to blank out the doctors who
-//  should not appear at all.
 
 Doctor Performance Rank =
 VAR EligibleDoctors =
@@ -416,22 +229,8 @@ RETURN
         RANKX ( EligibleDoctors, [Average Satisfaction],, DESC, DENSE )
     )
 
-
-//  The measure above ranks on satisfaction alone, so it reproduces the SQL's
-//  primary sort but not its tie-breaks -- q10 breaks ties on wait time ascending,
-//  then visit count descending. RANKX takes one expression, so the trick is to
-//  fold the tie-break into it.
-//
-//  Satisfaction is a mean of integers 1..5 over at least 100 visits, so two
-//  distinct doctors' averages differ by at least 1/308, about 0.0032. Waits run
-//  12..88 minutes, so dividing by 100,000 perturbs the key by at most 0.00088 --
-//  a quarter of the smallest real gap. The nudge can therefore reorder ties and
-//  nothing else. Check that margin again if the visit floor or the wait range
-//  ever changes.
-
 Doctor Rank Key =
 [Average Satisfaction] - DIVIDE ( [Average Wait Minutes], 100000 )
-
 
 Doctor Performance Rank (exact) =
 VAR EligibleDoctors =
@@ -445,20 +244,6 @@ RETURN
         RANKX ( EligibleDoctors, [Doctor Rank Key],, DESC, DENSE )
     )
 
-
-//  Drop this into the leaderboard's visual-level filter, "is less than or equal
-//  to 10", to reproduce q10's WHERE PerformanceRank <= 10. Eleven rows is the
-//  right answer, not a bug: two doctors share rank 6.
-
-
-// -----------------------------------------------------------------------------
-//  8. Presentation                                folder: 06 Display
-// -----------------------------------------------------------------------------
-//  Power BI's display units go thousand / million / billion. Indian reporting
-//  goes lakh / crore, and a hospital board reading "1.58bn" would have to do the
-//  conversion in their head. This returns text, so it belongs in cards and table
-//  columns -- never on an axis, which needs a number to scale.
-
 Revenue Label =
 VAR Amount = [Total Revenue]
 RETURN
@@ -470,37 +255,8 @@ RETURN
         "₹" & FORMAT ( Amount, "#,0" )
     )
 
-
-//  Cards show "50,000" with no hint of what is filtered. This spells it out.
-
 Filter Context Label =
 VAR Visits = [Total Visits]
 VAR Share = FORMAT ( DIVIDE ( Visits, CALCULATE ( [Total Visits], REMOVEFILTERS () ) ), "0.0%" )
 RETURN
     FORMAT ( Visits, "#,0" ) & " visits selected  ·  " & Share & " of all visits"
-
-
-// =============================================================================
-//  Formatting to set once the measures exist
-// =============================================================================
-//
-//    Total Visits, Distinct Patients, Seen Within 30 Min,
-//    Satisfied Visits, Repeat Patients, Weekend Visits,
-//    Active Doctors, Cumulative Visits                 Whole number, #,0
-//
-//    Total Revenue, Insurance Covered, Patient Paid,
-//    Average Bill, Cumulative Revenue                  Decimal, ₹#,0
-//
-//    Average Wait Minutes, Median Wait Minutes,
-//    Wait P10 Minutes, Wait P90 Minutes,
-//    Visits per Patient, Patients per Doctor,
-//    Visits per Doctor                                 Decimal, #,0.0
-//
-//    Average Satisfaction                              Decimal, 0.00
-//
-//    every measure ending in %                         Percentage, 0.0%
-//
-//    Wait Band Colour                                  Text, and set
-//                                                      Data category = Hex colour
-//
-// =============================================================================

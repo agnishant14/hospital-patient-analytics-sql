@@ -37,15 +37,12 @@ TEAL_PALE = "#A8BFB8"
 GRID = "#DEE6E3"
 PAPER = "#F7F9F9"
 
-# The wait ramp, shared with docs/index.html (--s5..--s1) and theme.json.
 RAMP = ["#2E7D74", "#7CAE9E", "#C9A227", "#C77B2B", "#AE3B49"]
 THRESHOLDS = [25, 40, 55, 70]
-
 
 def read_csv(name: str) -> list[dict[str, str]]:
     with (ROOT / "exports" / f"{name}.csv").open(encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
-
 
 def wait_colour(minutes: float) -> str:
     """The same five-band step function the dashboard and the DAX measure use."""
@@ -54,24 +51,19 @@ def wait_colour(minutes: float) -> str:
             return colour
     return RAMP[-1]
 
-
 def thousands(value: float) -> str:
     """5000 -> '5k', 12500 -> '12.5k'. Lowercase k, matching the axis ticks."""
     scaled = value / 1000
     return f"{scaled:.0f}k" if scaled == int(scaled) else f"{scaled:.1f}k"
 
-
 def draw_demand(ax, growth: list[dict[str, str]]) -> None:
     years = [int(row["VisitYear"]) for row in growth]
     visits = [int(row["TotalVisits"]) for row in growth]
-    revenue = [float(row["TotalRevenueINR"]) / 1e7 for row in growth]  # crore
+    revenue = [float(row["TotalRevenueINR"]) / 1e7 for row in growth]
 
     bars = ax.bar(years, visits, width=0.62, color=TEAL_PALE,
                   edgecolor=TEAL_MID, linewidth=0.9, zorder=2)
 
-    # Visit counts sit inside the bars. The revenue line crosses the top of
-    # every bar, so a label above a bar is a label on top of the line -- the
-    # previous version of this chart struck '10.5k' straight through.
     for bar, count in zip(bars, visits):
         ax.text(bar.get_x() + bar.get_width() / 2,
                 bar.get_height() - max(visits) * 0.04,
@@ -106,20 +98,12 @@ def draw_demand(ax, growth: list[dict[str, str]]) -> None:
     ax.set_title("Annual demand and billed revenue", loc="left",
                  fontsize=13, fontweight="bold", color=INK, pad=16)
 
-
 def draw_service_risk(ax, risk: list[dict[str, str]]) -> None:
     waits = [float(row["AverageWaitMinutes"]) for row in risk]
     scores = [float(row["AverageSatisfaction"]) for row in risk]
     visits = [int(row["TotalVisits"]) for row in risk]
     names = [row["DepartmentName"] for row in risk]
 
-    # The 33 departments are not spread evenly: they sit in tight bands, a few
-    # departments to a band, with waits inside a band differing by well under a
-    # minute. That is the generator's seeded structure showing through, and it
-    # is worth stating rather than hiding, so the markers are small and
-    # semi-transparent -- a darker blob is several departments, not one.
-    # Tiers are counted here rather than hardcoded: sort the waits and start a
-    # new tier wherever consecutive values jump by more than a minute.
     tiers = 1 + sum(1 for a, b in zip(sorted(waits), sorted(waits)[1:]) if b - a > 1.0)
 
     ax.scatter(waits, scores,
@@ -127,8 +111,6 @@ def draw_service_risk(ax, risk: list[dict[str, str]]) -> None:
                c=[wait_colour(w) for w in waits],
                alpha=0.7, edgecolors="white", linewidths=0.7, zorder=3)
 
-    # Label the two ends only. Thirty-three labels would be a word cloud; the
-    # shape of the cloud is the finding and the outlier is the recommendation.
     worst = max(range(len(risk)), key=lambda i: waits[i])
     best = min(range(len(risk)), key=lambda i: waits[i])
     for index, dx, ha in ((worst, -16, "right"), (best, 16, "left")):
@@ -153,7 +135,6 @@ def draw_service_risk(ax, risk: list[dict[str, str]]) -> None:
     ax.text(0, 1.012, "Longer waits track lower satisfaction almost exactly; "
             "Emergency Medicine sits alone past every tier.",
             transform=ax.transAxes, fontsize=9.5, color=MUTED)
-
 
 def main() -> None:
     growth = sorted(read_csv("q02_annual_growth"), key=lambda r: int(r["VisitYear"]))
@@ -185,7 +166,6 @@ def main() -> None:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUTPUT, dpi=170, facecolor=fig.get_facecolor())
     print(f"wrote {OUTPUT.relative_to(ROOT)}")
-
 
 if __name__ == "__main__":
     main()

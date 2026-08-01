@@ -1,4 +1,3 @@
--- Q10. Who are the highest-rated doctors with at least 100 visits?
 ;WITH EligibleDoctors AS (
     SELECT
         d.DoctorID,

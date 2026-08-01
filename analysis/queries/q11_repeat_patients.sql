@@ -1,4 +1,3 @@
--- Q11. What percentage of patients returned for multiple visits?
 ;WITH PatientVisitFrequency AS (
     SELECT
         PatientID,

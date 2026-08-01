@@ -1,4 +1,3 @@
--- Q7. Which departments have service-quality or wait-time risk?
 SELECT
     d.DepartmentName,
     COUNT_BIG(*) AS TotalVisits,

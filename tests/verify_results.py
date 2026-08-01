@@ -22,8 +22,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from oracle import generate_visits, load_dimensions  # noqa: E402
-from queries import ALL_QUERIES  # noqa: E402
+from oracle import generate_visits, load_dimensions
+from queries import ALL_QUERIES
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPORTS = ROOT / "exports"
@@ -31,7 +31,6 @@ EXPORTS = ROOT / "exports"
 GREEN, RED, YELLOW, DIM, RESET = (
     "\033[32m", "\033[31m", "\033[33m", "\033[2m", "\033[0m"
 )
-
 
 def normalise(value) -> str:
     """Compare 45.69 and '45.690' as equal, and treat NULL/'' alike."""
@@ -44,12 +43,10 @@ def normalise(value) -> str:
         return text
     return f"{number:.4f}" if number % 1 else f"{number:.0f}"
 
-
 def read_csv(path: Path) -> tuple[list[str], list[list[str]]]:
     with path.open(newline="", encoding="utf-8-sig") as handle:
         rows = list(csv.reader(handle))
     return (rows[0], rows[1:]) if rows else ([], [])
-
 
 def compare(name: str, header: list[str], expected: list[list]) -> list[str]:
     """Return a list of human-readable problems; empty means the check passed."""
@@ -83,7 +80,6 @@ def compare(name: str, header: list[str], expected: list[list]) -> list[str]:
                     return problems
     return problems
 
-
 def main() -> int:
     wanted = sys.argv[1] if len(sys.argv) > 1 else None
 
@@ -103,7 +99,6 @@ def main() -> int:
     dims = load_dimensions()
     visits = generate_visits(dims)
 
-    # Structural assertions that mirror validation/08_data_quality_checks.sql.
     checks = [
         ("fact row count", len(visits), 50_000),
         ("clean patients", len(dims["patients"]), 2_431),
@@ -154,7 +149,6 @@ def main() -> int:
     print(f"{GREEN}All checks passed.{RESET} "
           f"{total_cells:,} values agree between SQL Server and the oracle.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -24,11 +24,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))
 
-from oracle import generate_visits, load_dimensions  # noqa: E402
-from queries import ALL_QUERIES  # noqa: E402
+from oracle import generate_visits, load_dimensions
+from queries import ALL_QUERIES
 
 EXPORTS = ROOT / "exports"
-
 
 def write_csv(name: str, header: list[str], rows: list[list]) -> Path:
     path = EXPORTS / f"{name}.csv"
@@ -38,13 +37,11 @@ def write_csv(name: str, header: list[str], rows: list[list]) -> Path:
         writer.writerows(rows)
     return path
 
-
 def main() -> None:
     EXPORTS.mkdir(exist_ok=True)
     dims = load_dimensions()
     visits = generate_visits(dims)
 
-    # --- Dimensions (cleaned layer, exactly as the fact table sees them) ----
     write_csv(
         "dim_patient",
         ["PatientID", "FullName", "Gender", "DOB", "City", "State", "Country"],
@@ -81,7 +78,6 @@ def main() -> None:
                          key=lambda p: p["PaymentMethodID"])],
     )
 
-    # --- Fact table --------------------------------------------------------
     write_csv(
         "fact_patientvisits",
         ["VisitID", "PatientID", "DoctorID", "DepartmentID", "DiagnosisID",
@@ -96,16 +92,12 @@ def main() -> None:
          for v in visits],
     )
 
-    # --- The 12 analytical query results -----------------------------------
     for query in ALL_QUERIES:
         name, header, rows = query(visits, dims)
         write_csv(name, header, rows)
 
     written = sorted(EXPORTS.glob("*.csv"))
 
-    # Record where these files came from. verify_results.py reads this so it
-    # never claims to have cross-checked SQL Server when it only checked the
-    # oracle against itself.
     (EXPORTS / "PROVENANCE.txt").write_text(
         "source: oracle\n"
         "generated-by: scripts/build_exports.py\n"
@@ -126,7 +118,6 @@ def main() -> None:
         print(f"  {path.name}")
     print("\nProvenance: oracle (no SQL Server involved).")
     print("Run scripts/export_from_sqlserver.sh to replace these with real exports.")
-
 
 if __name__ == "__main__":
     main()

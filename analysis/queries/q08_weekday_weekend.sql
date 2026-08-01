@@ -1,4 +1,3 @@
--- Q8. How does demand differ between weekdays and weekends?
 ;WITH VisitDayType AS (
     SELECT
         CASE

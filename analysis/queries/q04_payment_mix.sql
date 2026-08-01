@@ -1,4 +1,3 @@
--- Q4. How are visit volume and billed revenue split by payment method?
 SELECT
     pm.PaymentMethod,
     COUNT_BIG(*) AS TotalVisits,

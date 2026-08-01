@@ -1,19 +1,3 @@
-/**
- * Does the dashboard's own JavaScript agree with the SQL results?
- *
- * verify_dashboard.py checks that the packed payload still holds the right
- * numbers. This checks the layer above it: the aggregation and filtering code
- * that actually runs in the browser.
- *
- * Rather than reimplement that logic here -- which would only prove the copy
- * agrees with itself -- this evaluates the real <script> out of docs/index.html
- * against a small DOM stub, then drives the functions it exposes on
- * window.__dashboard and diffs the results against exports/*.csv.
- *
- * Usage:
- *   node tests/verify_dashboard_js.mjs
- */
-
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,10 +6,6 @@ import vm from "node:vm";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const GREEN = "[32m", RED = "[31m", DIM = "[2m", RESET = "[0m";
 
-// ---------------------------------------------------------------------------
-// A DOM stub covering exactly what the dashboard touches. Elements record the
-// listeners attached to them, so a test can click a department row for real.
-// ---------------------------------------------------------------------------
 function makeElement(tag) {
   const node = {
     tagName: String(tag).toUpperCase(),
@@ -65,9 +45,6 @@ function makeDocument() {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Boot the real dashboard script inside that stub.
-// ---------------------------------------------------------------------------
 function boot() {
   const html = readFileSync(join(ROOT, "docs", "index.html"), "utf8");
   const scripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
@@ -82,7 +59,6 @@ function boot() {
   sandbox.window = sandbox;
   vm.createContext(sandbox);
 
-  // data.js assigns onto window; the dashboard script then reads it.
   vm.runInContext(readFileSync(join(ROOT, "docs", "data.js"), "utf8"), sandbox);
   vm.runInContext(scripts[0][1], sandbox);
 
@@ -92,9 +68,6 @@ function boot() {
   return sandbox.window;
 }
 
-// ---------------------------------------------------------------------------
-// CSV + comparison helpers
-// ---------------------------------------------------------------------------
 function readCsv(name) {
   const text = readFileSync(join(ROOT, "exports", `${name}.csv`), "utf8").replace(/^﻿/, "");
   const [head, ...body] = text.trim().split("\n");
@@ -111,20 +84,17 @@ function check(label, actual, expected) {
     failures.push(`${label}: dashboard ${actual}, warehouse ${expected}`);
   }
 }
-// SQL Server rounds half away from zero; JS toFixed rounds half to even in
-// some cases, so compare the way the screen will actually show the number.
+
 function round2(value) {
   return (Math.round((value + Number.EPSILON) * 100) / 100).toFixed(2);
 }
 
-// ---------------------------------------------------------------------------
 console.log(`${DIM}Booting docs/index.html in a DOM stub...${RESET}`);
 const win = boot();
 const dash = win.__dashboard;
 const META = win.HOSPITAL_META;
 const departments = META.departments.map((d) => d.name);
 
-// --- unfiltered: the dashboard's own aggregate vs the published KPIs --------
 let a = dash.aggregate();
 const kpi = readCsv("q01_operating_kpis")[0];
 check("total visits", a.n, kpi.TotalVisits);
@@ -137,7 +107,6 @@ check("average satisfaction", round2(a.sat / a.n), Number(kpi.AverageSatisfactio
 const repeat = readCsv("q11_repeat_patients")[0];
 check("repeat patients", a.repeat, repeat.RepeatPatients);
 
-// --- per-department: the triage board and the department table -------------
 for (const row of readCsv("q07_department_service_risk")) {
   const d = departments.indexOf(row.DepartmentName);
   if (d < 0) { failures.push(`unknown department in q07: ${row.DepartmentName}`); continue; }
@@ -146,20 +115,19 @@ for (const row of readCsv("q07_department_service_risk")) {
         Number(row.AverageWaitMinutes).toFixed(2));
   check(`${row.DepartmentName} avg satisfaction`, round2(a.deptSat[d] / a.deptN[d]),
         Number(row.AverageSatisfaction).toFixed(2));
-  // The "seen within 30 min" column is read off the wait histogram.
+
   const within = dash.countUpTo(a.deptHist, d * dash.WAITMAX, 30);
   check(`${row.DepartmentName} within 30 min`,
         (100 * within / a.deptN[d]).toFixed(2),
         Number(row.VisitsWithin30MinutesPercent).toFixed(2));
 }
 
-// --- the histogram must be a faithful copy of the wait distribution ---------
 for (let d = 0; d < departments.length; d++) {
   let total = 0;
   for (let v = 0; v < dash.WAITMAX; v++) total += a.deptHist[d * dash.WAITMAX + v];
   check(`${departments[d]} histogram total`, total, a.deptN[d]);
 }
-// A median has to sit inside the 10th-90th band, for every department.
+
 for (let d = 0; d < departments.length; d++) {
   const base = d * dash.WAITMAX, n = a.deptN[d];
   const p10 = dash.percentile(a.deptHist, base, n, 0.10);
@@ -170,7 +138,6 @@ for (let d = 0; d < departments.length; d++) {
   }
 }
 
-// --- payment, age and day-type panels --------------------------------------
 for (const row of readCsv("q04_payment_mix")) {
   const p = META.payments.indexOf(row.PaymentMethod);
   check(`${row.PaymentMethod} visits`, a.payN[p], row.TotalVisits);
@@ -184,16 +151,12 @@ for (const row of readCsv("q05_age_band")) {
         Number(row.AverageBillINR).toFixed(2));
 }
 
-// --- monthly trend ---------------------------------------------------------
 const monthly = readCsv("q09_monthly_trend");
 check("months on the trend line", monthly.length, META.months);
 monthly.forEach((row, index) => {
   check(`${row.MonthStart} visits`, a.monN[index], row.TotalVisits);
 });
 
-// --- the doctor leaderboard must reproduce q10 row for row -----------------
-// q10 uses DENSE_RANK, so the tie at rank 6 is the interesting part: two
-// doctors share a rank and the next rank is not skipped.
 {
   const rendered = win.document.getElementById("docBody").children
     .map((tr) => tr.children.map((td) => td.textContent.trim()));
@@ -212,7 +175,6 @@ monthly.forEach((row, index) => {
   });
 }
 
-// --- filtering: drive the real state, then re-aggregate --------------------
 const annual = readCsv("q02_annual_growth");
 annual.forEach((row, yearIndex) => {
   dash.state.years.clear();
@@ -236,7 +198,6 @@ for (const row of readCsv("q08_weekday_weekend")) {
 }
 dash.state.days.clear();
 
-// Filtering to one department must reproduce that department's own totals.
 {
   const emergency = departments.indexOf("Emergency Medicine");
   dash.state.depts.clear();
@@ -252,7 +213,6 @@ dash.state.days.clear();
   dash.state.depts.clear();
 }
 
-// Combined filters must still add up: the parts partition the whole.
 {
   let sum = 0;
   for (let p = 0; p < META.payments.length; p++) {
@@ -270,7 +230,6 @@ dash.state.days.clear();
   check("payment slices partition the 36-55 age band", sum, ageOnly);
 }
 
-// An impossible selection must come back empty rather than throwing.
 {
   dash.state.years.add(0);
   dash.state.depts.add(departments.indexOf("Emergency Medicine"));
@@ -281,13 +240,12 @@ dash.state.days.clear();
   if (!(narrow.n >= 0 && narrow.n < a.n)) {
     failures.push(`narrow filter returned ${narrow.n}, expected fewer than ${a.n}`);
   }
-  dash.render();   // must not throw on a near-empty selection
+  dash.render();
   dash.state.years.clear(); dash.state.depts.clear(); dash.state.days.clear();
   dash.state.pays.clear(); dash.state.ages.clear();
   dash.render();
 }
 
-// --- report ----------------------------------------------------------------
 if (failures.length) {
   console.log(`${RED}${failures.length} value(s) differ between the dashboard and exports/.${RESET}`);
   failures.slice(0, 20).forEach((line) => console.log(`  ${line}`));

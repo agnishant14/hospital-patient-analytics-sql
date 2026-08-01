@@ -30,15 +30,12 @@ DATA_JS = ROOT / "docs" / "data.js"
 
 GREEN, RED, RESET = "\033[32m", "\033[31m", "\033[0m"
 
-
 def dec(value, places: int = 2) -> Decimal:
     return Decimal(value).quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP)
-
 
 def read_csv(name: str) -> list[dict]:
     with (EXPORTS / f"{name}.csv").open(newline="", encoding="utf-8-sig") as handle:
         return list(csv.DictReader(handle))
-
 
 def load_payload() -> tuple[dict, dict]:
     """Unpack data.js into columns, mirroring what the dashboard's JS does."""
@@ -72,7 +69,6 @@ def load_payload() -> tuple[dict, dict]:
     }
     return meta, columns
 
-
 def main() -> int:
     if not DATA_JS.exists():
         print(f"{RED}docs/data.js not found.{RESET} Run scripts/build_dashboard_data.py")
@@ -87,7 +83,6 @@ def main() -> int:
         if str(actual) != str(expected):
             failures.append(f"{label}: dashboard {actual}, warehouse {expected}")
 
-    # --- q01: headline operating KPIs --------------------------------------
     kpi = read_csv("q01_operating_kpis")[0]
     check("total visits", rows, int(kpi["TotalVisits"]))
     check("distinct patients", len(set(col["patient"])), int(kpi["DistinctPatients"]))
@@ -96,7 +91,6 @@ def main() -> int:
     check("average wait", dec(Decimal(sum(col["wait"])) / rows), dec(Decimal(kpi["AverageWaitMinutes"])))
     check("average satisfaction", dec(Decimal(sum(col["sat"])) / rows), dec(Decimal(kpi["AverageSatisfaction"])))
 
-    # --- q07: per-department wait and satisfaction, the triage board's spine -
     by_dept: dict[int, list[int]] = defaultdict(list)
     for row in range(rows):
         by_dept[col["dept"][row]].append(row)
@@ -115,7 +109,6 @@ def main() -> int:
             dec(Decimal(record["AverageSatisfaction"])),
         )
 
-    # --- q04 / q05 / q08 / q11: the dimensions the filter bar exposes -------
     for record in read_csv("q04_payment_mix"):
         position = meta["payments"].index(record["PaymentMethod"])
         members = [r for r in range(rows) if col["pay"][r] == position]
@@ -152,7 +145,6 @@ def main() -> int:
         counts[value] += 1
     check("repeat patients", sum(1 for n in counts.values() if n > 1), int(repeat["RepeatPatients"]))
 
-    # --- q02: the year buckets the timeline filter slices on ----------------
     year_visits: dict[int, int] = defaultdict(int)
     year_revenue: dict[int, int] = defaultdict(int)
     for row in range(rows):
@@ -177,7 +169,6 @@ def main() -> int:
     print(f"  KPIs, all {len(departments)} departments, payment mix, age bands,")
     print(f"  weekday/weekend, repeat rate and all 6 year buckets reconcile.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

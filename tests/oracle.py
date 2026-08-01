@@ -39,7 +39,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# The synthetic scenario spans these years; volumes are fixed by the generator.
 YEAR_BOUNDARIES = (
     (5_000, 2020),
     (11_000, 2021),
@@ -49,12 +48,8 @@ YEAR_BOUNDARIES = (
     (50_000, 2025),
 )
 TOTAL_VISITS = 50_000
-EPOCH = date(1900, 1, 1)  # 1900-01-01 was a Monday, matching the T-SQL weekday trick
+EPOCH = date(1900, 1, 1)
 
-
-# --------------------------------------------------------------------------
-# T-SQL arithmetic helpers
-# --------------------------------------------------------------------------
 def _to_decimal(value) -> Decimal:
     """Convert ints, Decimals and exact Fractions to Decimal without losing
     precision. Fractions are used for ranking keys so that ties are decided on
@@ -65,7 +60,6 @@ def _to_decimal(value) -> Decimal:
             return Decimal(value.numerator) / Decimal(value.denominator)
     return Decimal(value)
 
-
 def dec(value, places: int = 2) -> Decimal:
     """Round like ``CAST(x AS DECIMAL(p, places))`` -- half away from zero.
 
@@ -75,26 +69,19 @@ def dec(value, places: int = 2) -> Decimal:
     quantum = Decimal(1).scaleb(-places)
     return _to_decimal(value).quantize(quantum, rounding=ROUND_HALF_UP)
 
-
 def pct(numerator, denominator, places: int = 2) -> Decimal | str:
     """Mirror ``100.0 * n / NULLIF(d, 0)`` including the NULL on a zero divisor."""
     if not denominator:
         return ""
     return dec(Decimal(100) * Decimal(numerator) / Decimal(denominator), places)
 
-
 def average(total, count, places: int = 2) -> Decimal | str:
     if not count:
         return ""
     return dec(Decimal(total) / Decimal(count), places)
 
-
-# --------------------------------------------------------------------------
-# Dimension loading -- parses the committed INSERT statements
-# --------------------------------------------------------------------------
 def _sql_text(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
-
 
 def _field(raw: str) -> str | None:
     """Convert one SQL literal from an INSERT ... VALUES list."""
@@ -103,14 +90,13 @@ def _field(raw: str) -> str | None:
         return None
     return raw[1:-1] if raw.startswith("'") else raw
 
-
 def _parse_inserts(text: str, table: str, column_count: int) -> list[list[str | None]]:
     """Extract the VALUES tuple of every INSERT for one table."""
     pattern = re.compile(
         r"INSERT INTO dbo\." + re.escape(table) + r"\s*\([^)]*\)\s*VALUES\s*\((.*?)\);",
         re.IGNORECASE | re.DOTALL,
     )
-    # Split on commas that are not inside single quotes.
+
     splitter = re.compile(r",(?=(?:[^']*'[^']*')*[^']*$)")
     rows: list[list[str | None]] = []
     for match in pattern.finditer(text):
@@ -120,27 +106,18 @@ def _parse_inserts(text: str, table: str, column_count: int) -> list[list[str | 
         rows.append(fields)
     return rows
 
-
 def title_case(value: str) -> str:
     """Mirror ``UPPER(LEFT(...)) + LOWER(SUBSTRING(...))`` from the cleaning step."""
     trimmed = value.strip()
     return trimmed[:1].upper() + trimmed[1:].lower()
 
-
-# Mirrors the rows of dbo.Ref_CityAlias in cleaning/05_data_cleaning.sql. This
-# is the one place the oracle copies a value from the SQL rather than deriving
-# it, because the mapping is reference data: there is nothing to independently
-# recompute. Both sides must be edited together, and tests/verify_results.py
-# fails if they disagree, since the exports carry the aliased spelling.
 CITY_ALIASES = {"Chennnai": "Chennai"}
-
 
 def load_dimensions() -> dict:
     """Load raw dimensions, then apply the cleaning rules from step 05."""
     people = _sql_text("data/02_insert_patients_doctors.sql")
     reference = _sql_text("data/03_insert_reference_dimensions.sql")
 
-    # --- Patients: clean per cleaning/05_data_cleaning.sql -----------------
     patients: dict[str, dict] = {}
     raw_patient_count = 0
     for patient_id, first, last, gender, dob, location in _parse_inserts(
@@ -164,7 +141,6 @@ def load_dimensions() -> dict:
             "Country": country,
         }
 
-    # --- Doctors ----------------------------------------------------------
     doctors = {
         doctor_id: {
             "DoctorID": doctor_id,
@@ -177,7 +153,6 @@ def load_dimensions() -> dict:
         )
     }
 
-    # --- Departments: clean per step 05 (Specialization becomes the name) --
     departments: dict[str, dict] = {}
     raw_department_count = 0
     for dept_id, _name, category, specialization, _hod in _parse_inserts(
@@ -216,10 +191,6 @@ def load_dimensions() -> dict:
         "raw_department_count": raw_department_count,
     }
 
-
-# --------------------------------------------------------------------------
-# Fact generation -- mirrors data/04_generate_visits.sql
-# --------------------------------------------------------------------------
 def _year_and_sequence(n: int) -> tuple[int, int]:
     previous = 0
     for boundary, year in YEAR_BOUNDARIES:
@@ -227,7 +198,6 @@ def _year_and_sequence(n: int) -> tuple[int, int]:
             return year, n - previous - 1
         previous = boundary
     raise ValueError(n)
-
 
 def generate_visits(dimensions: dict) -> list[dict]:
     """Recompute all 50,000 fact rows from the generator specification."""
@@ -241,15 +211,14 @@ def generate_visits(dimensions: dict) -> list[dict]:
             days=((sequence * 37) + (sequence // 7) * 11) % days_in_year
         )
 
-        # 486 one-time visitors, the rest drawn from a 1,945-patient repeat cohort.
         patient_no = n if n <= 486 else 487 + ((n * 37 + (n // 11) * 17) % 1945)
         doctor_no = ((n * 29 + (n // 13) * 7) % 200) + 1
 
         bucket = n % 20
         if bucket in (0, 1, 2):
-            department_no = 20  # Emergency Medicine -- deliberately over-weighted
+            department_no = 20
         elif bucket in (3, 4):
-            department_no = 1  # Cardiology
+            department_no = 1
         else:
             department_no = ((n * 17 + (n // 7) * 5) % 33) + 1
 
@@ -317,7 +286,7 @@ def generate_visits(dimensions: dict) -> list[dict]:
                 "InsuranceAmount": insurance,
                 "SatisfactionScore": satisfaction,
                 "WaitTimeMinutes": wait_minutes,
-                # Derived attributes, materialised once for the analysis layer.
+
                 "VisitYear": visit_date.year,
                 "DayType": "Weekend" if is_weekend else "Weekday",
                 "PatientAge": age,
@@ -331,6 +300,5 @@ def generate_visits(dimensions: dict) -> list[dict]:
         )
 
     return visits
-
 
 AGE_ORDER = {"0-17": 1, "18-35": 2, "36-55": 3, "56+": 4}

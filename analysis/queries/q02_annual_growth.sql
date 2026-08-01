@@ -1,4 +1,3 @@
--- Q2. How quickly are annual visit volume and revenue growing?
 ;WITH YearlyPerformance AS (
     SELECT
         YEAR(VisitDate) AS VisitYear,

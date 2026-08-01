@@ -10,6 +10,3 @@ __pycache__/
 *.tmp
 .idea/
 .vscode/
-
-# Personal notes, not part of the project
-RESUME_BULLETS.md

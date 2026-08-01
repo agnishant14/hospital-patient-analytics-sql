@@ -11,13 +11,12 @@
 <style>
 :root{
   color-scheme: light;
-  /* Cool clinical paper, not cream. Deep slate-teal ink. */
+
   --ink:#16232B; --ink-2:#4A5C64; --ink-3:#7C8C92;
   --rule:#C7D3D0; --rule-soft:#DEE6E3;
   --paper:#E8EDEB; --card:#FFFFFF;
   --drape:#2E7D74; --drape-dk:#1C544E;
-  /* The satisfaction ramp. Every colour on this page comes from here, so ochre
-     and red only ever mean one thing: wait time crossed a line. */
+
   --s5:#2E7D74; --s4:#7CAE9E; --s3:#C9A227; --s2:#C77B2B; --s1:#AE3B49;
   --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --sans:"Archivo", "Helvetica Neue", -apple-system, system-ui, sans-serif;
@@ -32,7 +31,6 @@ a{color:var(--drape-dk)}
 .sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
   clip:rect(0 0 0 0); white-space:nowrap; border:0}
 
-/* ---- masthead ------------------------------------------------------- */
 .masthead{border-bottom:1px solid var(--rule); background:var(--card)}
 .masthead__in{display:flex; align-items:baseline; gap:20px; flex-wrap:wrap; padding:16px 0}
 .masthead__name{font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.14em;
@@ -44,7 +42,6 @@ a{color:var(--drape-dk)}
   border-bottom:1px solid var(--rule); padding-bottom:1px}
 .masthead__links a:hover{color:var(--drape-dk); border-color:var(--drape)}
 
-/* ---- sticky control bar --------------------------------------------- */
 .controls{position:sticky; top:0; z-index:40; background:rgba(232,237,235,.94);
   backdrop-filter:blur(8px); border-bottom:1px solid var(--rule)}
 .controls__in{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 0}
@@ -69,7 +66,6 @@ a{color:var(--drape-dk)}
 .reset:hover{color:var(--ink)}
 .reset[hidden]{display:none}
 
-/* ---- hero ----------------------------------------------------------- */
 .hero{padding:56px 0 8px}
 .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
   color:var(--drape-dk); margin:0 0 14px}
@@ -78,7 +74,6 @@ a{color:var(--drape-dk)}
 .hero__lede{font-size:16.5px; color:var(--ink-2); max-width:60ch; margin:0}
 .hero__lede b{color:var(--ink); font-weight:600}
 
-/* ---- triage board (the signature) ----------------------------------- */
 .board{--gutter:190px; margin:34px 0 0}
 .board__head{display:grid; grid-template-columns:var(--gutter) 1fr 128px; align-items:end;
   gap:14px; padding-bottom:6px}
@@ -111,7 +106,6 @@ a{color:var(--drape-dk)}
 .board__note{font-family:var(--mono); font-size:11.5px; color:var(--ink-3); padding-top:12px;
   margin:0; display:flex; gap:20px; flex-wrap:wrap}
 
-/* ---- sections ------------------------------------------------------- */
 .sec{padding:64px 0 0}
 .sec__head{margin-bottom:20px}
 .sec__head h2{font-size:24px; letter-spacing:-.018em; font-weight:700; margin:0 0 5px}
@@ -121,7 +115,6 @@ a{color:var(--drape-dk)}
 .panel__head h2{font-size:17px; letter-spacing:-.01em; font-weight:700; margin:0 0 4px}
 .panel__head p{margin:0; color:var(--ink-2); font-size:13px}
 
-/* ---- KPI strip ------------------------------------------------------ */
 .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:var(--rule);
   border:1px solid var(--rule); border-radius:3px; overflow:hidden; margin-top:26px}
 .kpi{background:var(--card); padding:15px 16px 14px}
@@ -134,7 +127,6 @@ a{color:var(--drape-dk)}
 .kpi__d[data-dir="up"]{color:var(--drape-dk)}
 .kpi__d[data-dir="down"]{color:var(--s1)}
 
-/* ---- trend ---------------------------------------------------------- */
 .trend__top{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px}
 .trend__toggle{margin-left:auto; display:flex; gap:6px}
 .trend__canvas{position:relative; height:230px}
@@ -154,7 +146,6 @@ a{color:var(--drape-dk)}
 .trend__x{display:flex; justify-content:space-between; font-family:var(--mono);
   font-size:10.5px; color:var(--ink-3); margin-top:4px}
 
-/* ---- split panels --------------------------------------------------- */
 .split{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:26px}
 .bars{margin:0; padding:0; list-style:none}
 .bars li{margin-bottom:9px}
@@ -171,7 +162,6 @@ a{color:var(--drape-dk)}
 .bar[aria-pressed="true"] .bar__k{font-weight:700; color:var(--drape-dk)}
 .bar[data-dim="1"][aria-pressed="false"]{opacity:.42}
 
-/* ---- tables --------------------------------------------------------- */
 .tbl-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
 table{width:100%; border-collapse:collapse; font-size:13px}
 thead th{border-bottom:1px solid var(--rule); padding:0; text-align:right; white-space:nowrap}
@@ -200,7 +190,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
 .empty{padding:26px 8px; font-family:var(--mono); font-size:12.5px; color:var(--ink-3);
   text-align:left}
 
-/* ---- receipts ------------------------------------------------------- */
 .receipts{margin-top:26px; border:1px solid var(--rule); border-radius:3px;
   background:var(--card); overflow:hidden}
 .rrow{display:grid; grid-template-columns:1fr 1fr 44px; border-bottom:1px solid var(--rule-soft)}
@@ -215,7 +204,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
   text-transform:uppercase; color:var(--ink-3)}
 .rhead > div{padding:9px 16px}
 
-/* ---- footer --------------------------------------------------------- */
 .foot{margin-top:72px; border-top:1px solid var(--rule); background:var(--card)}
 .foot__in{padding:26px 0 40px; font-family:var(--mono); font-size:11.5px; color:var(--ink-3);
   display:flex; gap:26px; flex-wrap:wrap; align-items:center}
@@ -224,7 +212,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
   color:var(--ink-3)}
 .boot{padding:80px 0; font-family:var(--mono); font-size:13px; color:var(--ink-3)}
 
-/* ---- responsive ----------------------------------------------------- */
 @media (max-width:900px){
   .kpis{grid-template-columns:repeat(3,1fr)}
   .split{grid-template-columns:1fr}
@@ -433,8 +420,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     return;
   }
 
-  // ---- unpack ---------------------------------------------------------
-  // Columns sit end to end in the order documented in build_dashboard_data.py.
   var N = META.rows;
   var bin = atob(B64), raw = new Uint8Array(bin.length), i;
   for (i = 0; i < bin.length; i++) raw[i] = bin.charCodeAt(i);
@@ -457,16 +442,15 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
   var YEARS = [];
   for (i = 0; i < MONTHS / 12; i++) YEARS.push(BASE + i);
 
-  // Month, year and the weekend flag are packed into one byte. Split once.
   var MONTH = new Uint8Array(N), YEAR = new Uint8Array(N), WKND = new Uint8Array(N);
   for (i = 0; i < N; i++) {
     var m = raw[i] & 0x7f;
     MONTH[i] = m; YEAR[i] = (m / 12) | 0; WKND[i] = raw[i] >> 7;
   }
 
-  var WAITMAX = 96;                    // waits run 12..88; pad to a round bucket count
-  var THRESHOLDS = [25, 40, 55, 70];   // each one costs a star
-  var SCALE_MAX = 95;                  // x-axis of the triage board, in minutes
+  var WAITMAX = 96;
+  var THRESHOLDS = [25, 40, 55, 70];
+  var SCALE_MAX = 95;
   var RAMP = ["", "--s1", "--s2", "--s3", "--s4", "--s5"];
 
   function ramp(band) { return "var(" + RAMP[band] + ")"; }
@@ -478,7 +462,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     return minutes <= 25 ? 5 : minutes <= 40 ? 4 : minutes <= 55 ? 3 : minutes <= 70 ? 2 : 1;
   }
 
-  // ---- formatting -----------------------------------------------------
   var NF = new Intl.NumberFormat("en-IN");
   function num(v) { return NF.format(Math.round(v)); }
   function inr(v) {
@@ -490,7 +473,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
   var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   function monthLabel(index) { return MONTH_NAMES[index % 12] + " " + (BASE + ((index / 12) | 0)); }
 
-  // ---- filter state ---------------------------------------------------
   var state = { years: new Set(), days: new Set(), depts: new Set(), pays: new Set(), ages: new Set() };
   var sort = { key: "visits", dir: -1 };
   var trendMetric = "visits";
@@ -501,8 +483,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
   }
   function toggle(set, value) { if (set.has(value)) set.delete(value); else set.add(value); }
 
-  // Sets are right for the chips, but the aggregation loop runs 50,000 times,
-  // so flatten each filter into a lookup array first. Empty means "all".
   function maskFrom(set, size) {
     var mask = new Uint8Array(size);
     if (!set.size) { mask.fill(1); return mask; }
@@ -510,7 +490,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     return mask;
   }
 
-  // ---- aggregation ----------------------------------------------------
   function aggregate() {
     var yOn = maskFrom(state.years, YEARS.length),
         dOn = maskFrom(state.days, 2),
@@ -557,7 +536,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     return a;
   }
 
-  // Percentile and threshold counts come straight off the wait histogram.
   function percentile(hist, base, count, p) {
     var target = Math.max(1, Math.ceil(p * count)), cum = 0;
     for (var v = 0; v < WAITMAX; v++) {
@@ -572,9 +550,8 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     return total;
   }
 
-  var BASELINE = null;   // unfiltered aggregate, so KPIs can show a comparison
+  var BASELINE = null;
 
-  // ---- chips: built once, state synced on every render ------------------
   function makeChip(label, onClick) {
     var b = document.createElement("button");
     b.className = "chip"; b.type = "button"; b.textContent = label;
@@ -646,7 +623,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     state.ages.forEach(function (g) { add("Age " + AGES[g], function () { state.ages.delete(g); }); });
   }
 
-  // ---- triage board ---------------------------------------------------
   function pos(minutes) { return (minutes / SCALE_MAX) * 100; }
 
   function buildScale() {
@@ -735,7 +711,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     });
   }
 
-  // ---- KPI strip ------------------------------------------------------
   function renderKpis(a) {
     var filtered = anyFilter(), host = document.getElementById("kpis");
     var happy = a.satDist[4] + a.satDist[5];
@@ -788,7 +763,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     });
   }
 
-  // ---- monthly trend --------------------------------------------------
   var trendSeries = [], trendPeak = 1;
   var PLOT = { w: 1000, h: 200, top: 12, bottom: 192 };
 
@@ -839,7 +813,7 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
       var ratio = Math.min(1, Math.max(0, (clientX - box.left) / box.width));
       var index = Math.round(ratio * (MONTHS - 1));
       var value = trendSeries[index] || 0;
-      // Percentages are relative to .trend__canvas, which matches the viewBox.
+
       var left = (index / (MONTHS - 1)) * 100;
       var top = (PLOT.bottom - (value / trendPeak) * (PLOT.bottom - PLOT.top)) / PLOT.h * 100;
 
@@ -859,8 +833,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     canvas.addEventListener("mouseleave", hide);
   }
 
-  // ---- bar panels -----------------------------------------------------
-  // format(value, count) so a caller can show a total or an average.
   function renderBars(hostId, labels, counts, values, format, selected, onToggle) {
     var host = document.getElementById(hostId), peak = 0, k;
     for (k = 0; k < labels.length; k++) if (counts[k] > peak) peak = counts[k];
@@ -890,7 +862,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     });
   }
 
-  // ---- department table -----------------------------------------------
   var COLUMNS = [
     { key: "name", label: "Department", text: true },
     { key: "category", label: "Category", text: true },
@@ -987,10 +958,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     });
   }
 
-  // ---- doctor leaderboard ---------------------------------------------
-  // Mirrors q10_top_doctors.sql: a minimum caseload, then DENSE_RANK over
-  // (satisfaction desc, wait asc, visits desc). The threshold scales with the
-  // filter, since slicing to a single year would otherwise empty the table.
   function renderDoctors(a) {
     var minimum = anyFilter() ? Math.max(10, Math.round(100 * a.n / N)) : 100;
     var eligible = [], k;
@@ -1019,7 +986,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
       return;
     }
 
-    // DENSE_RANK: equal keys share a rank, and the next rank is not skipped.
     var rank = 0, previous = null;
     for (k = 0; k < eligible.length; k++) {
       var row = eligible[k];
@@ -1045,7 +1011,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     }
   }
 
-  // ---- render ---------------------------------------------------------
   function render() {
     var a = aggregate();
     if (!BASELINE) BASELINE = a;
@@ -1078,9 +1043,8 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
     render();
   });
 
-  // ---- repository links + provenance badge ------------------------------
   (function links() {
-    // Resolves on <account>.github.io/<repo>/ without hardcoding the account.
+
     var repo = location.pathname.split("/").filter(Boolean)[0];
     var base = location.hostname.indexOf("github.io") > -1 && repo
       ? "https://github.com/" + location.hostname.split(".")[0] + "/" + repo
@@ -1105,9 +1069,6 @@ tbody tr{border-bottom:1px solid var(--rule-soft)}
   boot.hidden = true;
   document.getElementById("app").hidden = false;
 
-  // Test hook. tests/verify_dashboard_js.mjs drives these exact functions
-  // against exports/*.csv, so the browser aggregation is checked rather than a
-  // Node-side copy of it. Harmless in a browser; nothing reads it there.
   window.__dashboard = {
     aggregate: aggregate, percentile: percentile, countUpTo: countUpTo,
     state: state, render: render, WAITMAX: WAITMAX, baseline: function () { return BASELINE; }

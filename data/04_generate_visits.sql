@@ -1,12 +1,3 @@
-/*
-  Step 04: generate 50,000 deterministic synthetic hospital visits.
-
-  The data is synthetic and contains no real patient information. The formulas
-  deliberately create realistic analytical patterns: annual volume growth,
-  heavier emergency demand, longer emergency wait times, and a dominant
-  treatment for each diagnosis. A fixed formula makes every run reproducible.
-*/
-
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
@@ -70,15 +61,14 @@ EntityKeys AS (
         n,
         VisitDate,
         CASE
-            -- Keep 20% of patients as one-time visitors and distribute the
-            -- remaining visits across a repeat-care cohort.
+
             WHEN n <= 486 THEN n
             ELSE 487 + ((n * 37 + (n / 11) * 17) % 1945)
         END AS PatientNo,
         ((n * 29 + (n / 13) * 7) % 200) + 1 AS DoctorNo,
         CASE
-            WHEN n % 20 IN (0, 1, 2) THEN 20 -- Emergency Medicine
-            WHEN n % 20 IN (3, 4)    THEN 1  -- Cardiology
+            WHEN n % 20 IN (0, 1, 2) THEN 20
+            WHEN n % 20 IN (3, 4)    THEN 1
             ELSE ((n * 17 + (n / 7) * 5) % 33) + 1
         END AS DepartmentNo,
         ((n * 7 + (n / 9) * 3) % 4) + 1 AS PaymentMethodNo
@@ -109,7 +99,7 @@ OperationalMeasures AS (
         END
         + ((n * 17) % 31)
         + CASE
-            -- 1900-01-01 was a Monday; values 5 and 6 are Saturday/Sunday.
+
             WHEN DATEDIFF(DAY, CONVERT(DATE, '19000101', 112), VisitDate) % 7 IN (5, 6)
                 THEN 8
             ELSE 0

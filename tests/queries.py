@@ -16,15 +16,12 @@ from fractions import Fraction
 
 from oracle import AGE_ORDER, average, dec, pct
 
-
 def _sum_by(visits, key, value=lambda v: 1):
     totals = defaultdict(Fraction)
     for visit in visits:
         totals[key(visit)] += Fraction(value(visit))
     return totals
 
-
-# --- Q1 --------------------------------------------------------------------
 def q01_operating_kpis(visits, dims):
     total = len(visits)
     revenue = sum(v["BillAmount"] for v in visits)
@@ -44,8 +41,6 @@ def q01_operating_kpis(visits, dims):
         ]],
     )
 
-
-# --- Q2 --------------------------------------------------------------------
 def q02_annual_growth(visits, dims):
     counts = defaultdict(int)
     revenue = defaultdict(int)
@@ -71,8 +66,6 @@ def q02_annual_growth(visits, dims):
         rows,
     )
 
-
-# --- Q3 --------------------------------------------------------------------
 def q03_doctor_patient_load(visits, dims):
     patients = defaultdict(set)
     totals = defaultdict(int)
@@ -92,8 +85,6 @@ def q03_doctor_patient_load(visits, dims):
         rows,
     )
 
-
-# --- Q4 --------------------------------------------------------------------
 def q04_payment_mix(visits, dims):
     counts = defaultdict(int)
     revenue = defaultdict(int)
@@ -114,8 +105,6 @@ def q04_payment_mix(visits, dims):
         rows,
     )
 
-
-# --- Q5 --------------------------------------------------------------------
 def q05_age_band(visits, dims):
     counts = defaultdict(int)
     revenue = defaultdict(int)
@@ -128,8 +117,6 @@ def q05_age_band(visits, dims):
     rows.sort(key=lambda r: AGE_ORDER[r[0]])
     return "q05_age_band", ["AgeGroup", "TotalVisits", "AverageBillINR"], rows
 
-
-# --- Q6 --------------------------------------------------------------------
 def q06_department_rank(visits, dims):
     counts = defaultdict(int)
     revenue = defaultdict(int)
@@ -147,7 +134,7 @@ def q06_department_rank(visits, dims):
     rows = []
     for category in sorted(by_category):
         members = by_category[category]
-        # DENSE_RANK() OVER (PARTITION BY category ORDER BY revenue DESC)
+
         distinct_revenue = sorted({member[2] for member in members}, reverse=True)
         ranking = {value: index + 1 for index, value in enumerate(distinct_revenue)}
         ranked = [
@@ -164,8 +151,6 @@ def q06_department_rank(visits, dims):
         rows,
     )
 
-
-# --- Q7 --------------------------------------------------------------------
 def q07_department_service_risk(visits, dims):
     counts = defaultdict(int)
     satisfaction = defaultdict(int)
@@ -193,8 +178,6 @@ def q07_department_service_risk(visits, dims):
         rows,
     )
 
-
-# --- Q8 --------------------------------------------------------------------
 def q08_weekday_weekend(visits, dims):
     counts = defaultdict(int)
     revenue = defaultdict(int)
@@ -212,8 +195,6 @@ def q08_weekday_weekend(visits, dims):
         rows,
     )
 
-
-# --- Q9 --------------------------------------------------------------------
 def q09_monthly_trend(visits, dims):
     counts = defaultdict(int)
     for visit in visits:
@@ -225,7 +206,7 @@ def q09_monthly_trend(visits, dims):
     running = 0
     for index, month in enumerate(months):
         running += counts[month]
-        # LAG(TotalVisits, 12) is positional over the ordered result set.
+
         prior = counts[months[index - 12]] if index >= 12 else None
         rows.append([
             month.isoformat(),
@@ -240,8 +221,6 @@ def q09_monthly_trend(visits, dims):
         rows,
     )
 
-
-# --- Q10 -------------------------------------------------------------------
 def q10_top_doctors(visits, dims):
     counts = defaultdict(int)
     satisfaction = defaultdict(int)
@@ -264,7 +243,6 @@ def q10_top_doctors(visits, dims):
         if counts[key] >= 100
     ]
 
-    # DENSE_RANK() OVER (ORDER BY AvgSatisfaction DESC, AvgWait, TotalVisits DESC)
     keys = sorted({(-row[3], row[4], -row[2]) for row in eligible})
     ranking = {value: index + 1 for index, value in enumerate(keys)}
 
@@ -282,8 +260,6 @@ def q10_top_doctors(visits, dims):
         rows,
     )
 
-
-# --- Q11 -------------------------------------------------------------------
 def q11_repeat_patients(visits, dims):
     frequency = defaultdict(int)
     for visit in visits:
@@ -299,8 +275,6 @@ def q11_repeat_patients(visits, dims):
           average(sum(frequency.values()), distinct)]],
     )
 
-
-# --- Q12 -------------------------------------------------------------------
 def q12_diagnosis_treatment(visits, dims):
     counts = defaultdict(int)
     for visit in visits:
@@ -314,7 +288,7 @@ def q12_diagnosis_treatment(visits, dims):
     for diagnosis_id, pairs in by_diagnosis.items():
         best = max(count for _, count in pairs)
         for treatment_id, count in pairs:
-            if count == best:  # DENSE_RANK = 1 keeps every tie
+            if count == best:
                 rows.append([
                     dims["diagnoses"][diagnosis_id]["DiagnosisName"],
                     dims["treatments"][treatment_id]["TreatmentName"],
@@ -322,7 +296,6 @@ def q12_diagnosis_treatment(visits, dims):
                 ])
     rows.sort(key=lambda r: (r[0], r[1]))
     return "q12_diagnosis_treatment", ["DiagnosisName", "TreatmentName", "TreatmentCount"], rows
-
 
 ALL_QUERIES = [
     q01_operating_kpis, q02_annual_growth, q03_doctor_patient_load,

@@ -40,8 +40,6 @@ DDL_FILES = ("schema/01_create_tables.sql", "cleaning/05_data_cleaning.sql")
 MERMAID_OUT = ROOT / "diagrams" / "schema.mmd"
 PNG_OUT = ROOT / "diagrams" / "database_diagram.png"
 
-# The palette shared with docs/index.html, powerbi/theme.json and the executive
-# summary, so a colour means the same thing everywhere in the project.
 INK = "#16232B"
 MUTED = "#5B6B72"
 TEAL_DEEP = "#1C544E"
@@ -52,9 +50,6 @@ GRID = "#DEE6E3"
 PAPER = "#F7F9F9"
 AMBER = "#C9A227"
 
-# Row counts asserted by validation/08_data_quality_checks.sql. They are quoted
-# here rather than counted because the diagram has no database to count against;
-# tests/verify_sql_layout.py checks these against the THROW statements.
 ROW_COUNTS = {
     "PatientVisits_2020_2021": 11_000,
     "PatientVisits_2022_2023": 16_000,
@@ -65,10 +60,6 @@ ROW_COUNTS = {
     "Dim_Department_Clean": 33,
 }
 
-
-# --------------------------------------------------------------------------
-# Parsing the DDL
-# --------------------------------------------------------------------------
 def strip_comments(sql: str) -> str:
     """Remove comments without touching string literals.
 
@@ -98,7 +89,6 @@ def strip_comments(sql: str) -> str:
             index += 1
     return "".join(out)
 
-
 def split_definition(body: str) -> list[str]:
     """Split a CREATE TABLE body on commas at bracket depth zero.
 
@@ -119,29 +109,25 @@ def split_definition(body: str) -> list[str]:
     parts.append("".join(current))
     return [part.strip() for part in parts if part.strip()]
 
-
 CONSTRAINT_START = re.compile(
     r"^(CONSTRAINT|PRIMARY\s+KEY|FOREIGN\s+KEY|CHECK|UNIQUE)\b", re.IGNORECASE
 )
 FK_PATTERN = re.compile(
     r"FOREIGN\s+KEY\s*\(\s*(\w+)\s*\)\s*REFERENCES\s+dbo\.(\w+)", re.IGNORECASE
 )
-# Mermaid needs a plain type word, and the DDL types are close enough already:
-# VARCHAR(20) -> varchar, DECIMAL(18,2) -> decimal.
-TYPE_PATTERN = re.compile(r"^(\w+)")
 
+TYPE_PATTERN = re.compile(r"^(\w+)")
 
 class Table:
     def __init__(self, name: str, source: str) -> None:
         self.name = name
         self.source = source
-        self.columns: list[tuple[str, str, str]] = []  # name, type, key marker
-        self.foreign_keys: list[tuple[str, str]] = []  # column, referenced table
+        self.columns: list[tuple[str, str, str]] = []
+        self.foreign_keys: list[tuple[str, str]] = []
 
     @property
     def primary_key(self) -> str | None:
         return next((c for c, _, key in self.columns if key == "PK"), None)
-
 
 def parse_tables() -> dict[str, Table]:
     tables: dict[str, Table] = {}
@@ -150,8 +136,7 @@ def parse_tables() -> dict[str, Table]:
     for relative in DDL_FILES:
         sql = strip_comments((ROOT / relative).read_text(encoding="utf-8"))
         for match in pattern.finditer(sql):
-            # Walk to the matching close bracket rather than regexing for it:
-            # the body contains nested brackets in types and CHECK clauses.
+
             depth, index = 1, match.end()
             while depth and index < len(sql):
                 depth += (sql[index] == "(") - (sql[index] == ")")
@@ -178,10 +163,6 @@ def parse_tables() -> dict[str, Table]:
             tables[table.name] = table
     return tables
 
-
-# --------------------------------------------------------------------------
-# Output 1: mermaid, the full reference
-# --------------------------------------------------------------------------
 def write_mermaid(tables: dict[str, Table]) -> str:
     lines = ["erDiagram"]
     for table in tables.values():
@@ -199,14 +180,9 @@ def write_mermaid(tables: dict[str, Table]) -> str:
     MERMAID_OUT.write_text(text, encoding="utf-8")
     return text
 
-
-# --------------------------------------------------------------------------
-# Output 2: the PNG, the two-stage explanation
-# --------------------------------------------------------------------------
 def label(name: str) -> str:
     count = ROW_COUNTS.get(name)
     return f"{name}\n{count:,} rows" if count else name
-
 
 def box(ax, x, y, width, height, name, *, edge, fill="white", bold=False):
     ax.add_patch(FancyBboxPatch(
@@ -220,25 +196,20 @@ def box(ax, x, y, width, height, name, *, edge, fill="white", bold=False):
             color=INK, linespacing=1.5)
     return (x, y, width, height)
 
-
 def arrow(ax, start, end, *, colour, style="-", width=1.2):
     ax.add_patch(FancyArrowPatch(
         start, end, arrowstyle="-|>", mutation_scale=13,
         color=colour, linewidth=width, linestyle=style,
         shrinkA=0, shrinkB=0, zorder=2))
 
-
 def right(b):
     return (b[0] + b[2], b[1] + b[3] / 2)
-
 
 def left(b):
     return (b[0], b[1] + b[3] / 2)
 
-
 def mid_y(b):
     return b[1] + b[3] / 2
-
 
 def draw_png(tables: dict[str, Table]) -> None:
     """One picture, one job: show that there are two stages and that the fact
@@ -269,7 +240,6 @@ def draw_png(tables: dict[str, Table]) -> None:
             "raw dimensions.",
             fontsize=9.3, color=MUTED)
 
-    # --- Stage bands -------------------------------------------------------
     for x, width, title, subtitle in (
         (2, 30, "STAGE 1 · LANDING", "schema/01_create_tables.sql"),
         (38, 60, "STAGE 2 · ANALYTICAL MODEL", "cleaning/05_data_cleaning.sql"),
@@ -278,14 +248,12 @@ def draw_png(tables: dict[str, Table]) -> None:
             (x, 4.0), width, 45.0,
             boxstyle="round,pad=0,rounding_size=0.5",
             facecolor=WASH, edgecolor=GRID, linewidth=1.0, zorder=1))
-        # Letter-spaced by hand: matplotlib has no such property, and the
-        # eyebrow needs to read as a label rather than a second heading.
+
         ax.text(x + 1.6, 46.3, " ".join(title), fontsize=8.8,
                 fontweight="bold", color=TEAL_DEEP)
         ax.text(x + 1.6, 44.1, subtitle, fontsize=8.2, color=MUTED,
                 family="DejaVu Sans Mono")
 
-    # --- Stage 1 -----------------------------------------------------------
     raw_dirty = [
         box(ax, 4.0, 36.5, 24, 4.6, "Dim_Patient", edge=AMBER),
         box(ax, 4.0, 30.7, 24, 4.6, "Dim_Department", edge=AMBER),
@@ -297,7 +265,6 @@ def draw_png(tables: dict[str, Table]) -> None:
         for index, name in enumerate(staging)
     ]
 
-    # --- Stage 2 -----------------------------------------------------------
     clean_boxes = [
         box(ax, 40.5, 36.5, 22, 4.6, "Dim_Patient_Clean", edge=TEAL_DEEP),
         box(ax, 40.5, 30.7, 22, 4.6, "Dim_Department_Clean", edge=TEAL_DEEP),
@@ -313,16 +280,12 @@ def draw_png(tables: dict[str, Table]) -> None:
     fact = box(ax, 74.0, 22.0, 22, 15.0, "PatientVisits",
                fill=TEAL_PALE, edge=TEAL_DEEP, bold=True)
 
-    # --- Cleaning: two straight edges, the transform the old diagram omitted
     for source, target in zip(raw_dirty, clean_boxes):
         arrow(ax, right(source), left(target),
               colour=AMBER, style=(0, (4, 2.5)), width=1.5)
     ax.text(34.25, 39.6, "clean", ha="center", fontsize=8.4,
             style="italic", color=AMBER, fontweight="bold")
 
-    # --- Load: four staging tables, one orthogonal bus under the dimensions.
-    # The vertical riser has to span the whole staging stack, not just the
-    # bottom box, or the upper three arrows stop in empty space.
     bus_x, bus_y, riser_x = 33.0, 5.5, 85.0
     for b in staging_boxes:
         arrow(ax, right(b), (bus_x, mid_y(b)), colour=TEAL_MID, style=(0, (4, 2.5)))
@@ -334,11 +297,10 @@ def draw_png(tables: dict[str, Table]) -> None:
     ax.text(58.0, 6.2, "UNION ALL → ROW_NUMBER() dedupe → 50,000 rows",
             ha="center", fontsize=8.6, style="italic", color=TEAL_MID)
 
-    # --- Foreign keys, read off the parsed DDL rather than assumed ---------
     referenced = {ref for _, ref in tables["PatientVisits"].foreign_keys}
     spokes = clean_boxes + shared_boxes
     names = ["Dim_Patient_Clean", "Dim_Department_Clean"] + shared
-    targets = [35.4, 33.0, 30.6, 28.2, 25.8, 23.4]  # fan into the left edge
+    targets = [35.4, 33.0, 30.6, 28.2, 25.8, 23.4]
     for b, name, target_y in zip(spokes, names, targets):
         if name in referenced:
             arrow(ax, right(b), (left(fact)[0], target_y),
@@ -355,7 +317,6 @@ def draw_png(tables: dict[str, Table]) -> None:
     fig.savefig(PNG_OUT, dpi=150, facecolor=fig.get_facecolor(),
                 bbox_inches="tight", pad_inches=0.25)
 
-
 def main() -> None:
     tables = parse_tables()
     write_mermaid(tables)
@@ -363,7 +324,6 @@ def main() -> None:
     print(f"parsed {len(tables)} tables, "
           f"{sum(len(t.foreign_keys) for t in tables.values())} foreign keys")
     print(f"wrote {MERMAID_OUT.relative_to(ROOT)} and {PNG_OUT.relative_to(ROOT)}")
-
 
 if __name__ == "__main__":
     main()

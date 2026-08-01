@@ -1,4 +1,3 @@
--- Q5. How do visit volume and average bill differ by age band at visit date?
 ;WITH PatientAgeAtVisit AS (
     SELECT
         v.VisitID,

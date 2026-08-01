@@ -1,8 +1,3 @@
-/*
-  Step 08: fail-fast data-quality checks.
-  A successful run ends with: All data-quality checks passed.
-*/
-
 SET NOCOUNT ON;
 
 IF (SELECT COUNT_BIG(*) FROM dbo.PatientVisits) <> 50000
@@ -72,22 +67,6 @@ IF EXISTS (
 )
     THROW 52009, 'Quality check failed: orphaned fact records found.', 1;
 
-/*
-  City spellings that sound alike but were not standardised.
-
-  Every check above this one counts rows or tests a range. This one looks for a
-  defect that no count would reveal: the same place recorded under two
-  spellings, which inflates a distinct count and splits a group-by without ever
-  failing a constraint. 'Chennnai' sat next to 'Chennai' in this dataset
-  precisely because nothing was looking.
-
-  SOUNDEX collapses doubled letters and vowels, so the two spellings share the
-  code C500. Across the 38 spellings in this dimension it is exact: 37 codes,
-  one collision, and that collision is the real defect. It is still a
-  heuristic. If it ever fires on two genuinely different cities, the answer is
-  to exclude that pair here by name -- not to delete the check, and not to map
-  one real city onto another in dbo.Ref_CityAlias.
-*/
 DECLARE @SoundalikeCities NVARCHAR(2048);
 
 SELECT @SoundalikeCities = STRING_AGG(Collision, '; ')

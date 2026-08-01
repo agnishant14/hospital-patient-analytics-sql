@@ -1,4 +1,3 @@
--- Q12. What is the most common treatment for each diagnosis (including ties)?
 ;WITH TreatmentCounts AS (
     SELECT
         d.DiagnosisName,

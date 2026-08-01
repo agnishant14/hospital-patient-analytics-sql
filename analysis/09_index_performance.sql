@@ -1,52 +1,5 @@
-/*
-  Step 09: does each index in schema/06 earn its keep?
-
-  Step 06 creates four nonclustered indexes and asserts, in a comment, that they
-  support "the portfolio's most common analytical paths". This script is the
-  measurement behind that claim. It runs eight workloads twice -- once with the
-  four indexes present, once with only the clustered primary key -- and prints
-  the difference.
-
-  Read the logical-read column, not the millisecond column. Logical reads count
-  the 8 KB pages the engine touched, which is deterministic: the same query
-  against the same data returns the same number on your laptop and on a server.
-  Elapsed time on a 50,000-row table that fits entirely in memory is mostly
-  scheduler noise, and the run-to-run spread is usually wider than the effect
-  being measured. Both are reported; only one of them is evidence.
-
-  The script restores every index it drops. If it fails partway through, run
-  schema/06_create_indexes.sql to put things back.
-
-  Usage, from the repository root, with SQLCMD mode on:
-      :r ./analysis/09_index_performance.sql
-
-  Or standalone, in which case ask sqlcmd for clean output -- -h -1 drops the
-  column headings and -W trims the padding sqlcmd would otherwise add, either
-  of which would stop the rows being valid markdown:
-
-      sqlcmd -S localhost -d HospitalDB -i analysis/09_index_performance.sql -h -1 -W
-
-  It takes roughly a minute. The last two statements emit markdown rows; paste
-  them under the matching headings in results/index_performance.md.
-*/
-
 SET NOCOUNT ON;
 GO
-
-/* ---------------------------------------------------------------------------
-   The workloads.
-
-   Each is the aggregation core of one published query: the FROM and GROUP BY
-   that determine which pages get read. The CTEs, window functions and CAST
-   formatting wrapped around them in analysis/queries/ operate on the handful of
-   rows the aggregation already produced, so they touch no further pages and
-   cannot change the number this measures.
-
-   The last two are not from the published set. They are there as controls --
-   a point lookup, which is what a nonclustered index is genuinely for, and an
-   ungrouped scan, which no index can help. Without them it is hard to tell
-   whether a modest reduction is a real win or just a narrower scan.
-   --------------------------------------------------------------------------- */
 
 DROP TABLE IF EXISTS dbo.IndexWorkload;
 GO
@@ -124,19 +77,6 @@ CREATE TABLE dbo.IndexBenchmark (
 );
 GO
 
-/* ---------------------------------------------------------------------------
-   The measurement loop.
-
-   sys.dm_exec_sessions.logical_reads is a running total for the session, so
-   the difference across a statement is that statement's page reads. Reading
-   the DMV itself costs a couple of pages; that constant lands on every
-   measurement in both phases, so it cancels out of the comparison.
-
-   Each workload is warmed up first. The first execution of anything pays for
-   a compile and, on a cold buffer pool, for physical I/O -- neither of which
-   is what this is trying to measure.
-   --------------------------------------------------------------------------- */
-
 CREATE OR ALTER PROCEDURE dbo.usp_MeasureWorkloads
     @Phase   VARCHAR(12),
     @Warmups INT = 2,
@@ -195,10 +135,6 @@ BEGIN
 END;
 GO
 
-/* ---------------------------------------------------------------------------
-   Pass one: the indexes from step 06 are in place.
-   --------------------------------------------------------------------------- */
-
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                WHERE name = 'IX_PatientVisits_VisitDate'
                  AND object_id = OBJECT_ID('dbo.PatientVisits'))
@@ -209,7 +145,6 @@ PRINT 'Pass 1 of 2: measuring with the step 06 indexes in place...';
 EXEC dbo.usp_MeasureWorkloads @Phase = 'indexed';
 GO
 
-/* Record what the indexes cost in space before dropping them. */
 DROP TABLE IF EXISTS dbo.IndexFootprint;
 GO
 
@@ -225,10 +160,6 @@ WHERE i.object_id = OBJECT_ID('dbo.PatientVisits')
 GROUP BY i.name, i.index_id;
 GO
 
-/* ---------------------------------------------------------------------------
-   Pass two: clustered primary key only.
-   --------------------------------------------------------------------------- */
-
 PRINT 'Dropping the nonclustered indexes...';
 DROP INDEX IF EXISTS IX_PatientVisits_VisitDate ON dbo.PatientVisits;
 DROP INDEX IF EXISTS IX_PatientVisits_Department_VisitDate ON dbo.PatientVisits;
@@ -240,8 +171,6 @@ PRINT 'Pass 2 of 2: measuring on the clustered primary key alone...';
 EXEC dbo.usp_MeasureWorkloads @Phase = 'clustered';
 GO
 
-/* Restore them from the canonical definitions rather than a copy, so this
-   script cannot drift away from what the build actually creates. */
 PRINT 'Restoring the indexes...';
 :r ./schema/06_create_indexes.sql
 
@@ -249,16 +178,6 @@ IF (SELECT COUNT(*) FROM sys.indexes
     WHERE object_id = OBJECT_ID('dbo.PatientVisits') AND index_id > 1) <> 4
     THROW 50009, 'Index restore failed. Run schema/06_create_indexes.sql by hand.', 1;
 GO
-
-/* ---------------------------------------------------------------------------
-   The report.
-
-   Minimum elapsed time, not mean: noise on a shared machine only ever adds
-   time, so the fastest run of seven is the closest thing to the real cost.
-   Logical reads should be identical across iterations -- if MinReads and
-   MaxReads differ for a workload, something else was writing to the table and
-   the run is not trustworthy.
-   --------------------------------------------------------------------------- */
 
 PRINT '';
 PRINT 'Copy the rows below into results/index_performance.md.';
@@ -322,8 +241,6 @@ FROM dbo.IndexFootprint
 ORDER BY SizeMB DESC;
 GO
 
-/* Leave the raw measurements behind for anyone who wants the distribution
-   rather than the summary, but drop the scaffolding. */
 DROP PROCEDURE IF EXISTS dbo.usp_MeasureWorkloads;
 GO
 

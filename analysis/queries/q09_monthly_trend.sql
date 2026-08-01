@@ -1,4 +1,3 @@
--- Q9. What is the monthly visit trend, cumulative volume, and year-over-year change?
 ;WITH MonthlyVisits AS (
     SELECT
         DATEFROMPARTS(YEAR(VisitDate), MONTH(VisitDate), 1) AS MonthStart,

@@ -1,4 +1,3 @@
--- Q6. Which departments lead revenue within their service category?
 ;WITH DepartmentPerformance AS (
     SELECT
         d.DepartmentCategory,

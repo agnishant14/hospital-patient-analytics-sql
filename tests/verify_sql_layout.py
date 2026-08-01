@@ -47,7 +47,6 @@ FACT_DDL = ROOT / "cleaning" / "05_data_cleaning.sql"
 DRIVER = ROOT / "analysis" / "07_business_analysis.sql"
 RUN_ALL = ROOT / "run_all.sql"
 
-
 def strip_comments(sql: str, keep_strings: bool = True) -> str:
     """Drop comments so they cannot fake a match, leaving string literals alone.
 
@@ -84,7 +83,6 @@ def strip_comments(sql: str, keep_strings: bool = True) -> str:
             index += 1
     return "".join(out)
 
-
 def soundex(name: str) -> str:
     """Standard American Soundex, which is what SQL Server's SOUNDEX() computes.
 
@@ -110,10 +108,8 @@ def soundex(name: str) -> str:
             previous = code
     return (out + "000")[:4]
 
-
 def includes(path: Path) -> list[str]:
     return re.findall(r"^\s*:r\s+(\S+)", path.read_text(encoding="utf-8"), re.M)
-
 
 def fact_columns() -> set[str]:
     """Column names from the CREATE TABLE dbo.PatientVisits block."""
@@ -134,11 +130,9 @@ def fact_columns() -> set[str]:
             columns.add(name)
     return columns
 
-
 def main() -> int:
     failures: list[str] = []
 
-    # --- 1. every :r resolves from the repository root ----------------------
     sql_files = sorted(ROOT.glob("**/*.sql"))
     for path in sql_files:
         if ".git" in path.parts:
@@ -151,7 +145,6 @@ def main() -> int:
                     f"exist relative to the repository root"
                 )
 
-    # --- 2. the harness drops exactly what step 06 creates ------------------
     created = set(re.findall(
         r"CREATE\s+INDEX\s+(\w+)", strip_comments(INDEX_DDL.read_text(encoding="utf-8"))
     ))
@@ -174,7 +167,6 @@ def main() -> int:
     if created and not any(name in harness_sql for name in ("IF NOT EXISTS", "THROW")):
         failures.append("the benchmark no longer checks the indexes exist before pass 1")
 
-    # --- 3. workload columns exist on the fact table ------------------------
     columns = fact_columns()
     workloads = re.findall(r"N'\s*(.*?)'\)[,;]", harness_sql, re.S)
     if len(workloads) != 8:
@@ -186,10 +178,7 @@ def main() -> int:
         "CAST", "DECIMAL", "YEAR", "MONTH", "DISTINCT", "dbo", "PatientVisits", "INT",
     }
     for workload in workloads:
-        # Recover the real query text before tokenising. These queries live
-        # inside a string literal, so their own quotes are doubled: blanking
-        # ''P1234'' naively removes two empty strings and leaves P1234 looking
-        # exactly like a column reference. Un-double, then blank.
+
         code = re.sub(r"'[^']*'", " ", workload.replace("''", "'"))
         for token in set(re.findall(r"\b([A-Za-z_]\w*)\b", code)):
             if token in keywords or token.islower() or len(token) < 3:
@@ -198,7 +187,6 @@ def main() -> int:
                 failures.append(f"benchmark workload references '{token}', which is "
                                 f"not a column of dbo.PatientVisits")
 
-    # --- 4. queries, driver and exports line up -----------------------------
     query_files = sorted((ROOT / "analysis" / "queries").glob("q*.sql"))
     driven = {Path(target).stem for target in includes(DRIVER)}
     for path in query_files:
@@ -218,7 +206,6 @@ def main() -> int:
         if csv_path.stem not in expected_exports:
             failures.append(f"exports/{csv_path.name} has no SQL file that produces it")
 
-    # --- 5. run_all's step labels are honest --------------------------------
     run_all = RUN_ALL.read_text(encoding="utf-8")
     labels = re.findall(r"PRINT '(\d+)/(\d+) -", run_all)
     steps = len(includes(RUN_ALL))
@@ -232,13 +219,6 @@ def main() -> int:
             failures.append(f"run_all.sql step {index} says of {total}, "
                             f"but there are {len(labels)} steps")
 
-    # --- 6. the benchmark's two phases agree with the report's two phases ----
-    #
-    # Unbalanced BEGIN/END is not checked here. SQL Server reports it on the
-    # first run, in a line-numbered error, better than a keyword counter can.
-    # The failure worth catching is the one that produces no error at all: the
-    # report pairs the phases with INNER JOINs, so a phase renamed in one place
-    # and not the other yields zero rows and a report that looks merely empty.
     measured = set(re.findall(r"@Phase\s*=\s*'(\w+)'", harness_sql))
     reported = set(re.findall(r"\.Phase\s*=\s*'(\w+)'", harness_sql))
     if measured != reported:
@@ -258,13 +238,6 @@ def main() -> int:
             failures.append(f"'{verb}' appears {harness_sql.count(verb)} times in the "
                             f"benchmark; a cursor needs exactly one of each")
 
-    # --- 7. the SOUNDEX rule in validation/08, evaluated against the data ---
-    #
-    # validation/08 fails the build if two city spellings share a SOUNDEX code.
-    # Nobody here can run it, so run the same rule in Python against the export
-    # the load produces. If this passes and the SQL still fails, the two have
-    # drifted; if this fails, a variant spelling reached the dimension without
-    # a row in dbo.Ref_CityAlias.
     quality = strip_comments((ROOT / "validation" / "08_data_quality_checks.sql")
                              .read_text(encoding="utf-8"))
     if "SOUNDEX" not in quality:
@@ -283,7 +256,6 @@ def main() -> int:
                     f"dbo.Ref_CityAlias and mirror it in tests/oracle.py"
                 )
 
-        # The alias map only helps if both implementations carry it.
         aliases = dict(re.findall(
             r"\('([^']+)',\s*'([^']+)'\)",
             re.search(r"INSERT INTO dbo\.Ref_CityAlias[^;]*;",
@@ -301,16 +273,6 @@ def main() -> int:
                 failures.append(f"'{variant}' is mapped in dbo.Ref_CityAlias but still "
                                 f"appears in exports/dim_patient.csv")
 
-    # --- 8. the schema diagram still describes this schema ------------------
-    #
-    # diagrams/database_diagram.png used to be drawn by hand, and it was wrong:
-    # it showed dbo.PatientVisits joined to the raw dimensions rather than the
-    # _Clean ones, and left the four staging tables out entirely. A reader would
-    # have concluded the cleaning step did not exist. scripts/generate_erd.py now
-    # derives both diagrams from the DDL, which fixes the drawing but not the
-    # staleness: the committed files are only correct until the next schema
-    # change. So parse the foreign keys again here, independently of that script,
-    # and require the committed mermaid to agree.
     ddl = "".join(
         strip_comments((ROOT / name).read_text(encoding="utf-8"))
         for name in ("schema/01_create_tables.sql", "cleaning/05_data_cleaning.sql")
@@ -337,19 +299,12 @@ def main() -> int:
             failures.append(f"diagrams/schema.mmd draws '{edge}', which the DDL no "
                             f"longer declares; re-run scripts/generate_erd.py")
 
-    # The README embeds a deliberately partial diagram -- the six joins the
-    # published queries make -- because all 14 tables inline would be unreadable.
-    # Partial is fine; wrong is not, and "wrong" is exactly what the old
-    # hand-drawn PNG was. So every edge it draws must be one the DDL declares.
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     for line in readme.splitlines():
         if "||--o{" in line and line.strip() not in expected_edges:
             failures.append(f"README.md draws '{line.strip()}', which the DDL does "
                             f"not declare")
 
-    # The diagram prints row counts, which it cannot verify against a database.
-    # validation/08 is the thing that asserts them, so require the two to agree
-    # rather than letting the picture quote a number nothing enforces.
     asserted = {table: int(count) for table, count in
                 re.findall(r"FROM dbo\.(\w+)\)\s*<>\s*(\d+)", quality)}
     erd_source = (ROOT / "scripts" / "generate_erd.py").read_text(encoding="utf-8")
@@ -378,7 +333,6 @@ def main() -> int:
     print(f"  {len(expected_edges)} foreign keys drawn in diagrams/schema.mmd "
           f"match the DDL")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

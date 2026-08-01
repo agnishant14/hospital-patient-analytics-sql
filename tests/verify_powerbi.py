@@ -35,7 +35,6 @@ DASHBOARD = ROOT / "docs" / "index.html"
 
 GREEN, RED, RESET = "\033[32m", "\033[31m", "\033[0m"
 
-# Table names the README tells you to rename each CSV to.
 TABLES = {
     "fact_patientvisits": "Fact Visits",
     "dim_patient": "Patient",
@@ -46,22 +45,18 @@ TABLES = {
     "dim_paymentmethod": "Payment Method",
 }
 
-# Columns measures.dax creates rather than loads.
 DATE_COLUMNS = {
     "Date", "Year", "Month Number", "Month Name",
     "Month Start", "Year Month", "Day Name", "Day Type",
 }
 CALCULATED = {"Fact Visits": {"Age At Visit", "Age Band", "Age Band Order"}}
 
-
 def dec(value, places: int = 2) -> Decimal:
     return Decimal(value).quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP)
-
 
 def read_csv(name: str) -> list[dict]:
     with (EXPORTS / f"{name}.csv").open(newline="", encoding="utf-8-sig") as handle:
         return list(csv.DictReader(handle))
-
 
 def money(value: Decimal) -> str:
     """1584479195.00 -> the '₹1,584,479,195' the README prints."""
@@ -70,7 +65,6 @@ def money(value: Decimal) -> str:
     if quantized == whole:
         return f"₹{int(whole):,}"
     return f"₹{quantized:,}"
-
 
 def checklist_figures() -> list[tuple[str, str]]:
     """Recompute every number the acceptance checklist quotes."""
@@ -116,7 +110,6 @@ def checklist_figures() -> list[tuple[str, str]]:
         ("Weekend Visits", f"| `Weekend Visits` | {weekend:,} → {pct(weekend)}"),
     ]
 
-    # --- the four diagnostic checks ----------------------------------------
     growth = read_csv("q02_annual_growth")
     by_year = {row["VisitYear"]: row for row in growth}
     figures.append(("2021 growth", f"| {by_year['2021']['VisitGrowthPercent']}% |"))
@@ -126,7 +119,6 @@ def checklist_figures() -> list[tuple[str, str]]:
         + " percent",
     ))
 
-    # What DATEADD would wrongly return, because 2021 has no 29 February.
     leap = sum(1 for row in facts if row["VisitDate"] == "2020-02-29")
     y2020 = sum(1 for row in facts if row["VisitDate"][:4] == "2020")
     y2021 = sum(1 for row in facts if row["VisitDate"][:4] == "2021")
@@ -166,12 +158,11 @@ def checklist_figures() -> list[tuple[str, str]]:
     figures.append(("department count", f"the {len(departments)} departments"))
     return figures
 
-
 def dax_references(text: str) -> tuple[set[tuple[str, str]], set[str], set[str]]:
     """Pull ('Table', 'Column') pairs, bare [Measure] refs, and definition names."""
     qualified = set(re.findall(r"'([^']+)'\[([^\]]+)\]", text))
 
-    body = re.sub(r"//[^\n]*", "", text)  # comments quote measures they don't call
+    body = re.sub(r"//[^\n]*", "", text)
     defined = {
         name.strip()
         for name in re.findall(r"^([A-Za-z][^=\n]*?) =$", body, re.M)
@@ -182,18 +173,15 @@ def dax_references(text: str) -> tuple[set[tuple[str, str]], set[str], set[str]]
     }
     return qualified, bare, defined
 
-
 def main() -> int:
     failures: list[str] = []
 
-    # --- 1. the acceptance checklist ---------------------------------------
     readme = (POWERBI / "README.md").read_text(encoding="utf-8")
     figures = checklist_figures()
     for label, needle in figures:
         if needle not in readme:
             failures.append(f"README is stale for {label}: exports say {needle!r}")
 
-    # --- 2. every reference in measures.dax resolves ------------------------
     dax = (POWERBI / "measures.dax").read_text(encoding="utf-8")
     qualified, bare, defined = dax_references(dax)
 
@@ -210,8 +198,6 @@ def main() -> int:
             failures.append(f"measures.dax references '{table}'[{column}], "
                             f"which is not a column of that table")
 
-    # A bare [X] is a measure, except inside the Date table where [Date] is the
-    # row-context column CALENDAR produces.
     for name in sorted(bare - defined - {"Date"}):
         failures.append(f"measures.dax calls [{name}], which nothing defines")
 
@@ -221,7 +207,6 @@ def main() -> int:
         failures.append(f"README claims {claimed.group(1)} measures, "
                         f"measures.dax defines {len(measures)}")
 
-    # --- 3. the two front ends share one colour language --------------------
     if DASHBOARD.exists():
         page = DASHBOARD.read_text(encoding="utf-8")
         css_ramp = [
@@ -230,7 +215,7 @@ def main() -> int:
         ]
         block = re.search(r"Wait Band Colour =.*?\n\n", dax, re.S).group(0)
         dax_ramp = [colour.upper() for colour in
-                    re.findall(r'"(#[0-9A-Fa-f]{6})"', block)][1:]  # skip the blank swatch
+                    re.findall(r'"(#[0-9A-Fa-f]{6})"', block)][1:]
         if css_ramp != dax_ramp:
             failures.append(f"colour ramps differ: dashboard {css_ramp}, DAX {dax_ramp}")
 
@@ -260,7 +245,6 @@ def main() -> int:
     print(f"  {len(measures)} measures, {len(qualified)} column references, all resolving")
     print(f"  wait thresholds and colour ramp match docs/index.html")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,4 +1,3 @@
--- Q3. How many distinct patients has each doctor treated?
 SELECT
     d.DoctorID,
     d.FirstName + ' ' + d.LastName AS DoctorName,

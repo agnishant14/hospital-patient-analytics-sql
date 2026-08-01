@@ -1,4 +1,3 @@
--- Doctor dimension. FullName is composed here so every consumer agrees.
 SELECT DoctorID,
        FirstName + ' ' + LastName AS DoctorName,
        Gender,

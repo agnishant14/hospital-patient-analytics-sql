@@ -1,4 +1,3 @@
--- Q1. What are the hospital's headline operating KPIs?
 SELECT
     COUNT_BIG(*) AS TotalVisits,
     COUNT(DISTINCT PatientID) AS DistinctPatients,
