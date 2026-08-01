@@ -7,7 +7,7 @@ patient satisfaction and treatment activity. Every published number is
 cross-checked by a second, independent implementation before it is allowed into
 this README.
 
-**[Open the live dashboard →](https://agnishant14.github.io/hospital-patient-visits-sql-analysis/)**
+**[Open the live dashboard →](https://agnishant14.github.io/hospital-patient-analytics-sql/)**
 Filter 50,000 visits by year, day type and department in the browser; no SQL
 Server needed. Same numbers as the SQL, and a test proves it.
 *(Replace `GITHUB-USERNAME` above after enabling Pages — see
