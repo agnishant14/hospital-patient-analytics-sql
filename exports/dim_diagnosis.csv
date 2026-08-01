@@ -1,0 +1,41 @@
+DiagnosisID,DiagnosisName
+DX01,Hypertension
+DX02,Type 2 Diabetes Mellitus
+DX03,Acute Bronchitis
+DX04,Pneumonia
+DX05,Chronic Obstructive Pulmonary Disease (COPD)
+DX06,Coronary Artery Disease
+DX07,Heart Failure
+DX08,Stroke (Cerebrovascular Accident)
+DX09,Atrial Fibrillation
+DX10,Gastroesophageal Reflux Disease (GERD)
+DX11,Peptic Ulcer Disease
+DX12,Chronic Kidney Disease
+DX13,Urolithiasis (Kidney Stones)
+DX14,Hypothyroidism
+DX15,Hyperthyroidism
+DX16,Osteoarthritis
+DX17,Rheumatoid Arthritis
+DX18,Depression
+DX19,Anxiety Disorder
+DX20,Migraine
+DX21,Seizure Disorder / Epilepsy
+DX22,Acute Appendicitis
+DX23,Gallstones (Cholelithiasis)
+DX24,Anemia
+DX25,Infectious Diarrhea
+DX26,Cellulitis
+DX27,Dermatitis / Eczema
+DX28,Fracture - Wrist
+DX29,Fracture - Hip
+DX30,Back Pain (Low Back Pain)
+DX31,Parkinson''s Disease
+DX32,Alzheimer''s Disease
+DX33,Chronic Liver Disease
+DX34,Alcohol Use Disorder
+DX35,Pneumothorax
+DX36,Sepsis
+DX37,Acute Kidney Injury
+DX38,Obsessive Compulsive Disorder
+DX39,Chronic Fatigue Syndrome
+DX40,Allergic Rhinitis

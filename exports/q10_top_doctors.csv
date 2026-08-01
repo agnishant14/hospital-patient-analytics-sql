@@ -1,0 +1,12 @@
+PerformanceRank,DoctorID,DoctorName,TotalVisits,AverageSatisfaction,AverageWaitMinutes
+1,D132,Dr. Raj Singh,154,3.47,41.43
+2,D058,Dr. Suresh Sharma,154,3.47,41.05
+3,D151,Dr. Arjun Gupta,154,3.47,41.51
+4,D077,Dr. Anita Khan,308,3.46,41.58
+5,D071,Dr. Vikram Singh,154,3.45,41.71
+6,D098,Dr. Ravi Sharma,154,3.45,41.73
+6,D119,Dr. Kavita Joshi,154,3.45,41.73
+7,D010,Dr. Tanya Patel,153,3.44,41.50
+8,D073,Dr. Rohan Joshi,308,3.44,41.57
+9,D056,Dr. Suresh Gupta,308,3.44,41.61
+10,D159,Dr. Arjun Mehra,154,3.43,41.58

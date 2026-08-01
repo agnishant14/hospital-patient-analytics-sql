@@ -1,0 +1,34 @@
+DepartmentName,TotalVisits,AverageSatisfaction,AverageWaitMinutes,VisitsWithin30MinutesPercent
+Emergency Medicine,8638,1.75,67.27,0.00
+Dermatology,1137,2.65,53.26,0.00
+Rehabilitation Medicine,1137,2.66,53.19,0.00
+Nephrology,1139,2.66,53.14,0.00
+Pediatrics,1139,2.90,49.53,0.00
+Rheumatology,1138,2.91,49.38,0.00
+Allergy and Immunology,1135,2.93,49.30,0.00
+Infectious Diseases,1137,2.93,49.24,0.00
+Occupational Medicine,1134,2.94,49.08,0.00
+Obstetrics and Gynecology,1136,3.16,45.55,6.60
+Pain Management,1134,3.17,45.38,7.14
+Endocrinology,1137,3.18,45.38,6.77
+Oncology,1139,3.18,45.24,6.06
+Sleep Medicine,1134,3.17,45.23,7.23
+Sports Medicine,1137,3.45,41.42,15.57
+Cardiology,6135,3.46,41.29,16.19
+Nuclear Medicine,1133,3.45,41.21,17.03
+Plastic Surgery,1136,3.46,41.20,16.37
+Hematology,1134,3.46,41.14,16.67
+Orthopedics,1137,3.46,41.12,16.01
+Neurology,1136,3.70,37.43,27.73
+General Surgery,1135,3.71,37.32,28.02
+Family Medicine,1138,3.71,37.23,28.56
+Gastroenterology,1133,3.72,37.15,28.51
+Radiology,1137,3.71,37.14,28.23
+Pathology,1138,3.96,33.43,41.30
+Pulmonology,1135,3.97,33.40,40.35
+Otolaryngology,1133,3.97,33.34,40.86
+Clinical Pharmacology,1140,3.98,33.22,41.93
+Geriatrics,1137,4.23,29.38,54.35
+Anesthesiology,1139,4.23,29.38,54.35
+Urology,1138,4.23,29.35,54.31
+Ophthalmology,1135,4.24,29.15,54.36

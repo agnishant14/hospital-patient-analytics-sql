@@ -1,0 +1,164 @@
+erDiagram
+    Dim_Patient {
+        varchar PatientID PK
+        varchar FirstName
+        varchar LastName
+        varchar Gender
+        date DOB
+        varchar CityStateCountry
+    }
+    Dim_Doctor {
+        varchar DoctorID PK
+        varchar FirstName
+        varchar LastName
+        varchar Gender
+        int ExperienceYears
+    }
+    Dim_Department {
+        varchar DepartmentID PK
+        varchar DepartmentName
+        varchar DepartmentCategory
+        varchar Specialization
+        varchar HOD
+    }
+    Dim_Diagnosis {
+        varchar DiagnosisID PK
+        varchar DiagnosisName
+    }
+    Dim_Treatment {
+        varchar TreatmentID PK
+        varchar TreatmentName
+    }
+    Dim_PaymentMethod {
+        varchar PaymentMethodID PK
+        varchar PaymentMethod
+    }
+    PatientVisits_2020_2021 {
+        varchar VisitID PK
+        varchar PatientID FK
+        varchar DoctorID FK
+        varchar DepartmentID FK
+        varchar DiagnosisID FK
+        varchar TreatmentID FK
+        varchar PaymentMethodID FK
+        date VisitDate
+        time VisitTime
+        date DischargeDate
+        decimal BillAmount
+        decimal InsuranceAmount
+        int SatisfactionScore
+        int WaitTimeMinutes
+    }
+    PatientVisits_2022_2023 {
+        varchar VisitID PK
+        varchar PatientID FK
+        varchar DoctorID FK
+        varchar DepartmentID FK
+        varchar DiagnosisID FK
+        varchar TreatmentID FK
+        varchar PaymentMethodID FK
+        date VisitDate
+        time VisitTime
+        date DischargeDate
+        decimal BillAmount
+        decimal InsuranceAmount
+        int SatisfactionScore
+        int WaitTimeMinutes
+    }
+    PatientVisits_2024 {
+        varchar VisitID PK
+        varchar PatientID FK
+        varchar DoctorID FK
+        varchar DepartmentID FK
+        varchar DiagnosisID FK
+        varchar TreatmentID FK
+        varchar PaymentMethodID FK
+        date VisitDate
+        time VisitTime
+        date DischargeDate
+        decimal BillAmount
+        decimal InsuranceAmount
+        int SatisfactionScore
+        int WaitTimeMinutes
+    }
+    PatientVisits_2025 {
+        varchar VisitID PK
+        varchar PatientID FK
+        varchar DoctorID FK
+        varchar DepartmentID FK
+        varchar DiagnosisID FK
+        varchar TreatmentID FK
+        varchar PaymentMethodID FK
+        date VisitDate
+        time VisitTime
+        date DischargeDate
+        decimal BillAmount
+        decimal InsuranceAmount
+        int SatisfactionScore
+        int WaitTimeMinutes
+    }
+    Ref_CityAlias {
+        varchar Variant PK
+        varchar Canonical
+    }
+    Dim_Patient_Clean {
+        varchar PatientID PK
+        varchar FullName
+        varchar Gender
+        date DOB
+        varchar City
+        varchar State
+        varchar Country
+    }
+    Dim_Department_Clean {
+        varchar DepartmentID PK
+        varchar DepartmentName
+        varchar DepartmentCategory
+    }
+    PatientVisits {
+        varchar VisitID PK
+        varchar PatientID FK
+        varchar DoctorID FK
+        varchar DepartmentID FK
+        varchar DiagnosisID FK
+        varchar TreatmentID FK
+        varchar PaymentMethodID FK
+        date VisitDate
+        time VisitTime
+        date DischargeDate
+        decimal BillAmount
+        decimal InsuranceAmount
+        int SatisfactionScore
+        int WaitTimeMinutes
+    }
+
+    Dim_Patient ||--o{ PatientVisits_2020_2021 : PatientID
+    Dim_Doctor ||--o{ PatientVisits_2020_2021 : DoctorID
+    Dim_Department ||--o{ PatientVisits_2020_2021 : DepartmentID
+    Dim_Diagnosis ||--o{ PatientVisits_2020_2021 : DiagnosisID
+    Dim_Treatment ||--o{ PatientVisits_2020_2021 : TreatmentID
+    Dim_PaymentMethod ||--o{ PatientVisits_2020_2021 : PaymentMethodID
+    Dim_Patient ||--o{ PatientVisits_2022_2023 : PatientID
+    Dim_Doctor ||--o{ PatientVisits_2022_2023 : DoctorID
+    Dim_Department ||--o{ PatientVisits_2022_2023 : DepartmentID
+    Dim_Diagnosis ||--o{ PatientVisits_2022_2023 : DiagnosisID
+    Dim_Treatment ||--o{ PatientVisits_2022_2023 : TreatmentID
+    Dim_PaymentMethod ||--o{ PatientVisits_2022_2023 : PaymentMethodID
+    Dim_Patient ||--o{ PatientVisits_2024 : PatientID
+    Dim_Doctor ||--o{ PatientVisits_2024 : DoctorID
+    Dim_Department ||--o{ PatientVisits_2024 : DepartmentID
+    Dim_Diagnosis ||--o{ PatientVisits_2024 : DiagnosisID
+    Dim_Treatment ||--o{ PatientVisits_2024 : TreatmentID
+    Dim_PaymentMethod ||--o{ PatientVisits_2024 : PaymentMethodID
+    Dim_Patient ||--o{ PatientVisits_2025 : PatientID
+    Dim_Doctor ||--o{ PatientVisits_2025 : DoctorID
+    Dim_Department ||--o{ PatientVisits_2025 : DepartmentID
+    Dim_Diagnosis ||--o{ PatientVisits_2025 : DiagnosisID
+    Dim_Treatment ||--o{ PatientVisits_2025 : TreatmentID
+    Dim_PaymentMethod ||--o{ PatientVisits_2025 : PaymentMethodID
+    Dim_Patient_Clean ||--o{ PatientVisits : PatientID
+    Dim_Doctor ||--o{ PatientVisits : DoctorID
+    Dim_Department_Clean ||--o{ PatientVisits : DepartmentID
+    Dim_Diagnosis ||--o{ PatientVisits : DiagnosisID
+    Dim_Treatment ||--o{ PatientVisits : TreatmentID
+    Dim_PaymentMethod ||--o{ PatientVisits : PaymentMethodID

@@ -1,0 +1,34 @@
+DepartmentID,DepartmentName,DepartmentCategory
+DEP01,Cardiology,Internal Medicine
+DEP02,Neurology,Internal Medicine
+DEP03,Orthopedics,Surgical Specialties
+DEP04,Oncology,Diagnostic & Cancer Care
+DEP05,Pediatrics,Primary & Preventive Care
+DEP06,Dermatology,Specialty Care
+DEP07,Ophthalmology,Specialty Care
+DEP08,Otolaryngology,Specialty Care
+DEP09,General Surgery,Surgical Specialties
+DEP10,Plastic Surgery,Surgical Specialties
+DEP11,Endocrinology,Internal Medicine
+DEP12,Rheumatology,Internal Medicine
+DEP13,Nephrology,Internal Medicine
+DEP14,Urology,Surgical Specialties
+DEP15,Pulmonology,Internal Medicine
+DEP16,Gastroenterology,Internal Medicine
+DEP17,Hematology,Internal Medicine
+DEP18,Obstetrics and Gynecology,Surgical Specialties
+DEP19,Infectious Diseases,Internal Medicine
+DEP20,Emergency Medicine,Emergency & Support Services
+DEP21,Anesthesiology,Emergency & Support Services
+DEP22,Pathology,Diagnostic & Cancer Care
+DEP23,Radiology,Diagnostic & Cancer Care
+DEP24,Nuclear Medicine,Diagnostic & Cancer Care
+DEP25,Pain Management,Surgical Specialties
+DEP26,Allergy and Immunology,Internal Medicine
+DEP27,Rehabilitation Medicine,Emergency & Support Services
+DEP28,Geriatrics,Primary & Preventive Care
+DEP29,Clinical Pharmacology,Emergency & Support Services
+DEP30,Family Medicine,Primary & Preventive Care
+DEP31,Sports Medicine,Surgical Specialties
+DEP32,Sleep Medicine,Primary & Preventive Care
+DEP33,Occupational Medicine,Primary & Preventive Care

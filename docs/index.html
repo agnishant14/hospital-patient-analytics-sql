@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hospital Patient Visits — a T-SQL warehouse you can poke at</title>
+<meta name="description" content="50,000 hospital visits, 2020-2025, modelled in SQL Server and re-aggregated live in the browser. Wait time sets the ceiling on patient satisfaction.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  /* Cool clinical paper, not cream. Deep slate-teal ink. */
+  --ink:#16232B; --ink-2:#4A5C64; --ink-3:#7C8C92;
+  --rule:#C7D3D0; --rule-soft:#DEE6E3;
+  --paper:#E8EDEB; --card:#FFFFFF;
+  --drape:#2E7D74; --drape-dk:#1C544E;
+  /* The satisfaction ramp. Every colour on this page comes from here, so ochre
+     and red only ever mean one thing: wait time crossed a line. */
+  --s5:#2E7D74; --s4:#7CAE9E; --s3:#C9A227; --s2:#C77B2B; --s1:#AE3B49;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sans:"Archivo", "Helvetica Neue", -apple-system, system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased}
+a{color:var(--drape-dk)}
+:focus-visible{outline:2px solid var(--drape); outline-offset:2px; border-radius:2px}
+.wrap{max-width:1180px; margin:0 auto; padding:0 28px}
+.sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap; border:0}
+
+/* ---- masthead ------------------------------------------------------- */
+.masthead{border-bottom:1px solid var(--rule); background:var(--card)}
+.masthead__in{display:flex; align-items:baseline; gap:20px; flex-wrap:wrap; padding:16px 0}
+.masthead__name{font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.14em;
+  text-transform:uppercase; margin:0}
+.masthead__sub{font-family:var(--mono); font-size:11.5px; color:var(--ink-3); margin:0}
+.masthead__links{margin-left:auto; display:flex; gap:18px; font-family:var(--mono);
+  font-size:11.5px; letter-spacing:.04em}
+.masthead__links a{color:var(--ink-2); text-decoration:none;
+  border-bottom:1px solid var(--rule); padding-bottom:1px}
+.masthead__links a:hover{color:var(--drape-dk); border-color:var(--drape)}
+
+/* ---- sticky control bar --------------------------------------------- */
+.controls{position:sticky; top:0; z-index:40; background:rgba(232,237,235,.94);
+  backdrop-filter:blur(8px); border-bottom:1px solid var(--rule)}
+.controls__in{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 0}
+.controls__label{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3)}
+.controls__group{display:flex; gap:6px; flex-wrap:wrap}
+.controls__spacer{flex:1 1 30px}
+.controls__count{font-family:var(--mono); font-size:12px; color:var(--ink-2); white-space:nowrap}
+.controls__count b{font-weight:600; color:var(--ink)}
+.chip{font-family:var(--mono); font-size:12px; padding:4px 10px; border:1px solid var(--rule);
+  background:transparent; color:var(--ink-2); border-radius:2px; cursor:pointer;
+  transition:background .12s, color .12s, border-color .12s}
+.chip:hover{border-color:var(--drape); color:var(--drape-dk)}
+.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:#fff}
+.pill{display:inline-flex; align-items:center; gap:6px; font-family:var(--mono);
+  font-size:11.5px; padding:3px 6px 3px 9px; background:var(--drape); color:#fff; border:0;
+  border-radius:2px; cursor:pointer}
+.pill:hover{background:var(--drape-dk)}
+.pill span{font-size:13px; line-height:1; opacity:.75}
+.reset{font-family:var(--mono); font-size:11.5px; background:none; border:0; cursor:pointer;
+  color:var(--ink-3); text-decoration:underline; text-underline-offset:3px; padding:4px}
+.reset:hover{color:var(--ink)}
+.reset[hidden]{display:none}
+
+/* ---- hero ----------------------------------------------------------- */
+.hero{padding:56px 0 8px}
+.eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--drape-dk); margin:0 0 14px}
+.hero h1{font-size:clamp(30px,5.2vw,50px); line-height:1.04; letter-spacing:-.024em;
+  font-weight:800; margin:0 0 18px; max-width:16ch}
+.hero__lede{font-size:16.5px; color:var(--ink-2); max-width:60ch; margin:0}
+.hero__lede b{color:var(--ink); font-weight:600}
+
+/* ---- triage board (the signature) ----------------------------------- */
+.board{--gutter:190px; margin:34px 0 0}
+.board__head{display:grid; grid-template-columns:var(--gutter) 1fr 128px; align-items:end;
+  gap:14px; padding-bottom:6px}
+.board__cap{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3)}
+.board__cap--r{text-align:right}
+.scale{position:relative; height:17px}
+.scale__t{position:absolute; bottom:0; transform:translateX(-50%); font-family:var(--mono);
+  font-size:10.5px; color:var(--ink-3); white-space:nowrap}
+.board__rows{border-top:1px solid var(--rule)}
+.brow{display:grid; grid-template-columns:var(--gutter) 1fr 128px; align-items:center;
+  gap:14px; width:100%; background:none; border:0; border-bottom:1px solid var(--rule-soft);
+  padding:0; font:inherit; color:inherit; cursor:pointer; text-align:left}
+.brow:hover{background:rgba(46,125,116,.06)}
+.brow[aria-pressed="true"]{background:rgba(46,125,116,.13)}
+.brow__name{font-size:12.5px; font-weight:500; text-align:right; padding:7px 0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.brow[aria-pressed="true"] .brow__name{font-weight:700}
+.brow__plot{position:relative; height:26px}
+.brow__range{position:absolute; top:50%; height:7px; margin-top:-3.5px; border-radius:4px;
+  opacity:.42}
+.brow__dot{position:absolute; top:50%; width:11px; height:11px; margin:-5.5px 0 0 -5.5px;
+  border-radius:50%; box-shadow:0 0 0 2.5px var(--paper)}
+.brow__nums{font-family:var(--mono); font-size:12px; text-align:right; padding:7px 0;
+  color:var(--ink-2); white-space:nowrap}
+.brow__nums b{color:var(--ink); font-weight:600}
+.brow__nums i{font-style:normal; color:var(--ink-3); font-size:11px; margin-left:8px}
+.zones{position:absolute; inset:0; pointer-events:none}
+.zline{position:absolute; top:0; bottom:0; width:1px; background:var(--rule)}
+.board__note{font-family:var(--mono); font-size:11.5px; color:var(--ink-3); padding-top:12px;
+  margin:0; display:flex; gap:20px; flex-wrap:wrap}
+
+/* ---- sections ------------------------------------------------------- */
+.sec{padding:64px 0 0}
+.sec__head{margin-bottom:20px}
+.sec__head h2{font-size:24px; letter-spacing:-.018em; font-weight:700; margin:0 0 5px}
+.sec__head p{margin:0; color:var(--ink-2); font-size:14px; max-width:66ch}
+.card{background:var(--card); border:1px solid var(--rule); border-radius:3px; padding:20px}
+.panel__head{margin-bottom:14px}
+.panel__head h2{font-size:17px; letter-spacing:-.01em; font-weight:700; margin:0 0 4px}
+.panel__head p{margin:0; color:var(--ink-2); font-size:13px}
+
+/* ---- KPI strip ------------------------------------------------------ */
+.kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:var(--rule);
+  border:1px solid var(--rule); border-radius:3px; overflow:hidden; margin-top:26px}
+.kpi{background:var(--card); padding:15px 16px 14px}
+.kpi__k{font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink-3); margin:0 0 7px}
+.kpi__v{font-family:var(--mono); font-size:21px; font-weight:600; letter-spacing:-.02em;
+  margin:0; line-height:1.1}
+.kpi__d{font-family:var(--mono); font-size:11px; color:var(--ink-3); margin:5px 0 0;
+  min-height:16px}
+.kpi__d[data-dir="up"]{color:var(--drape-dk)}
+.kpi__d[data-dir="down"]{color:var(--s1)}
+
+/* ---- trend ---------------------------------------------------------- */
+.trend__top{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px}
+.trend__toggle{margin-left:auto; display:flex; gap:6px}
+.trend__canvas{position:relative; height:230px}
+.trend__canvas svg{display:block; width:100%; height:100%}
+.trend__grid{stroke:var(--rule-soft); stroke-width:1}
+.trend__area{fill:rgba(46,125,116,.13)}
+.trend__line{fill:none; stroke:var(--drape); stroke-width:1.75}
+.trend__cursor{position:absolute; top:0; bottom:0; width:1px; background:var(--ink);
+  opacity:.28; pointer-events:none; display:none}
+.trend__dot{position:absolute; width:9px; height:9px; margin:-4.5px 0 0 -4.5px;
+  border-radius:50%; background:var(--drape); box-shadow:0 0 0 2.5px #fff;
+  pointer-events:none; display:none}
+.trend__tip{position:absolute; transform:translate(-50%,-165%); background:var(--ink);
+  color:#fff; font-family:var(--mono); font-size:11.5px; padding:5px 9px; border-radius:3px;
+  white-space:nowrap; pointer-events:none; display:none; z-index:5}
+.trend__hit{position:absolute; inset:0; cursor:crosshair}
+.trend__x{display:flex; justify-content:space-between; font-family:var(--mono);
+  font-size:10.5px; color:var(--ink-3); margin-top:4px}
+
+/* ---- split panels --------------------------------------------------- */
+.split{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:26px}
+.bars{margin:0; padding:0; list-style:none}
+.bars li{margin-bottom:9px}
+.bars li:last-child{margin-bottom:0}
+.bar{width:100%; display:grid; grid-template-columns:1fr auto; gap:4px 12px; background:none;
+  border:0; padding:5px 0 0; font:inherit; color:inherit; cursor:pointer; text-align:left}
+.bar:hover .bar__k{color:var(--drape-dk)}
+.bar__k{font-size:13px; font-weight:500}
+.bar__v{font-family:var(--mono); font-size:12px; color:var(--ink-2)}
+.bar__t{grid-column:1/-1; height:9px; background:var(--rule-soft); border-radius:2px;
+  overflow:hidden}
+.bar__f{display:block; height:100%; background:var(--drape); border-radius:2px;
+  transition:width .22s ease}
+.bar[aria-pressed="true"] .bar__k{font-weight:700; color:var(--drape-dk)}
+.bar[data-dim="1"][aria-pressed="false"]{opacity:.42}
+
+/* ---- tables --------------------------------------------------------- */
+.tbl-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
+table{width:100%; border-collapse:collapse; font-size:13px}
+thead th{border-bottom:1px solid var(--rule); padding:0; text-align:right; white-space:nowrap}
+thead th:first-child, thead th:nth-child(2){text-align:left}
+.sortbtn{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-3); background:none; border:0; padding:9px 8px; cursor:pointer; width:100%;
+  text-align:inherit}
+.sortbtn:hover:enabled{color:var(--ink)}
+.sortbtn:disabled{cursor:default}
+th[aria-sort] .sortbtn{color:var(--ink); font-weight:600}
+th[aria-sort="descending"] .sortbtn::after{content:" ↓"}
+th[aria-sort="ascending"] .sortbtn::after{content:" ↑"}
+tbody td{padding:8px; text-align:right; font-family:var(--mono); font-size:12.5px;
+  white-space:nowrap}
+tbody td:first-child, tbody td:nth-child(2){text-align:left; font-family:var(--sans);
+  font-size:13px}
+tbody tr{border-bottom:1px solid var(--rule-soft)}
+.pickable tbody tr{cursor:pointer}
+.pickable tbody tr:hover{background:rgba(46,125,116,.06)}
+.pickable tbody tr[aria-selected="true"]{background:rgba(46,125,116,.13)}
+.pickable tbody tr[aria-selected="true"] td:first-child{font-weight:700}
+.cat{font-family:var(--mono); font-size:10.5px; color:var(--ink-3); letter-spacing:.03em}
+.dotmark{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px;
+  vertical-align:1px}
+.rank{color:var(--ink-3); font-size:11px}
+.empty{padding:26px 8px; font-family:var(--mono); font-size:12.5px; color:var(--ink-3);
+  text-align:left}
+
+/* ---- receipts ------------------------------------------------------- */
+.receipts{margin-top:26px; border:1px solid var(--rule); border-radius:3px;
+  background:var(--card); overflow:hidden}
+.rrow{display:grid; grid-template-columns:1fr 1fr 44px; border-bottom:1px solid var(--rule-soft)}
+.rrow:last-child{border-bottom:0}
+.rrow > div{padding:14px 16px}
+.rrow__seed{border-right:1px solid var(--rule-soft); font-size:13.5px; color:var(--ink-2)}
+.rrow__found{font-size:13.5px}
+.rrow__found b{font-family:var(--mono); font-weight:600; font-size:13px}
+.rrow__ok{display:flex; align-items:center; justify-content:center; color:var(--drape);
+  font-size:17px; border-left:1px solid var(--rule-soft)}
+.rhead{background:var(--paper); font-family:var(--mono); font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3)}
+.rhead > div{padding:9px 16px}
+
+/* ---- footer --------------------------------------------------------- */
+.foot{margin-top:72px; border-top:1px solid var(--rule); background:var(--card)}
+.foot__in{padding:26px 0 40px; font-family:var(--mono); font-size:11.5px; color:var(--ink-3);
+  display:flex; gap:26px; flex-wrap:wrap; align-items:center}
+.badge{display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; padding:3px 7px; border:1px solid var(--rule); border-radius:2px;
+  color:var(--ink-3)}
+.boot{padding:80px 0; font-family:var(--mono); font-size:13px; color:var(--ink-3)}
+
+/* ---- responsive ----------------------------------------------------- */
+@media (max-width:900px){
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .split{grid-template-columns:1fr}
+  .board{--gutter:120px}
+  .rrow{grid-template-columns:1fr 44px}
+  .rrow__seed{border-right:0; border-bottom:1px solid var(--rule-soft); grid-column:1/-1}
+}
+@media (max-width:560px){
+  .wrap{padding:0 16px}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .board{--gutter:96px}
+  .board__head,.brow{grid-template-columns:var(--gutter) 1fr 74px}
+  .brow__name{font-size:11.5px}
+  .brow__nums i{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important; animation:none !important}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap masthead__in">
+    <p class="masthead__name">Hospital Patient Visits</p>
+    <p class="masthead__sub">SQL Server · star schema · 50,000 visits · 2020–2025</p>
+    <nav class="masthead__links" aria-label="Project links">
+      <a data-link="repo">Repository</a>
+      <a data-link="queries">The 12 queries</a>
+      <a data-link="exports">Download CSVs</a>
+    </nav>
+  </div>
+</header>
+
+<div id="app" hidden>
+
+<div class="controls">
+  <div class="wrap controls__in">
+    <span class="controls__label" id="yearLabel">Years</span>
+    <div class="controls__group" id="yearChips" role="group" aria-labelledby="yearLabel"></div>
+    <span class="controls__label" id="dayLabel" style="margin-left:8px">Days</span>
+    <div class="controls__group" id="dayChips" role="group" aria-labelledby="dayLabel"></div>
+    <div class="controls__group" id="activePills" aria-label="Active filters"></div>
+    <div class="controls__spacer"></div>
+    <span class="controls__count" id="count" aria-live="polite"></span>
+    <button class="reset" id="reset" type="button" hidden>Clear all filters</button>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow">Where the hospital loses its ratings</p>
+    <h1>Wait time sets the ceiling on satisfaction.</h1>
+    <p class="hero__lede">Cross <b>25</b>, <b>40</b>, <b>55</b> or <b>70</b> minutes and the patient's score drops a full star. Every department is plotted against those four lines below — the bar spans the 10th to 90th percentile wait, the dot is the median. One department never gets a chance at five stars.</p>
+  </section>
+
+  <section class="board" aria-labelledby="boardTitle">
+    <h2 id="boardTitle" class="sr">Departments ranked by median wait time</h2>
+    <div class="board__head">
+      <div class="board__cap board__cap--r">Department</div>
+      <div class="scale" id="scale"></div>
+      <div class="board__cap board__cap--r">Median · visits</div>
+    </div>
+    <div class="board__rows" id="board"></div>
+    <p class="board__note">
+      <span>Click a department to filter the whole page.</span>
+      <span>Bar spans the 10th–90th percentile wait, dot is the median, colour is the satisfaction band that wait buys.</span>
+    </p>
+  </section>
+
+  <h2 class="sr">Headline figures for the current selection</h2>
+  <div class="kpis" id="kpis"></div>
+
+  <section class="sec">
+    <div class="sec__head">
+      <h2>Seventy-two months of volume</h2>
+      <p>Visits grow every year here, and revenue tracks volume almost exactly — the average bill barely moves, so growth in this hospital is a throughput story rather than a pricing one.</p>
+    </div>
+    <div class="card">
+      <div class="trend__top">
+        <span class="controls__label" id="trendLabel"></span>
+        <div class="trend__toggle" id="trendToggle" role="group" aria-label="Choose a measure"></div>
+      </div>
+      <div class="trend__canvas" id="trendCanvas">
+        <svg id="trendSvg" viewBox="0 0 1000 200" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="trend__cursor" id="trendCursor"></div>
+        <div class="trend__dot" id="trendDot"></div>
+        <div class="trend__tip" id="trendTip" role="status"></div>
+        <div class="trend__hit" id="trendHit"></div>
+      </div>
+      <div class="trend__x"><span>Jan 2020</span><span>Dec 2025</span></div>
+    </div>
+  </section>
+
+  <div class="split">
+    <section class="card" aria-labelledby="payTitle">
+      <div class="panel__head">
+        <h2 id="payTitle">How patients pay</h2>
+        <p>Cash and cards still carry over half the billed revenue.</p>
+      </div>
+      <ul class="bars" id="payBars"></ul>
+    </section>
+    <section class="card" aria-labelledby="ageTitle">
+      <div class="panel__head">
+        <h2 id="ageTitle">Age at the time of the visit</h2>
+        <p>Worked out per visit and birthday-adjusted, not from the patient's age today.</p>
+      </div>
+      <ul class="bars" id="ageBars"></ul>
+    </section>
+  </div>
+
+  <section class="sec">
+    <div class="sec__head">
+      <h2>Every department</h2>
+      <p>Sort by any column. Click a row to filter, click it again to release. The dot carries the average satisfaction band, so ochre and red mean the same thing here as they do on the board above.</p>
+    </div>
+    <div class="card tbl-scroll">
+      <table class="pickable" id="deptTable">
+        <caption class="sr">Departments with visits, revenue, wait and satisfaction for the current selection</caption>
+        <thead><tr id="deptHead"></tr></thead>
+        <tbody id="deptBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec__head">
+      <h2>Highest-rated doctors</h2>
+      <p id="docCaption"></p>
+    </div>
+    <div class="card tbl-scroll">
+      <table>
+        <caption class="sr">Top ten doctors by average satisfaction</caption>
+        <thead><tr>
+          <th style="width:52px"><button class="sortbtn" type="button" disabled>Rank</button></th>
+          <th><button class="sortbtn" type="button" disabled>Doctor</button></th>
+          <th><button class="sortbtn" type="button" disabled>Visits</button></th>
+          <th><button class="sortbtn" type="button" disabled>Avg satisfaction</button></th>
+          <th><button class="sortbtn" type="button" disabled>Avg wait</button></th>
+        </tr></thead>
+        <tbody id="docBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec__head">
+      <p class="eyebrow">Data provenance</p>
+      <h2>The patterns were planted. The job was to dig them back out.</h2>
+      <p>This data is synthetic, deliberately. The generator writes known rules into 50,000 rows, which turns every rule into a test with an answer known in advance. The warehouse and its twelve queries have to recover them — and a second implementation in Python, working from the same written spec and never touching SQL Server, recomputes every published figure independently. If the two disagree by a single paisa, the build fails.</p>
+    </div>
+    <div class="receipts">
+      <div class="rrow rhead"><div>Seeded into the generator</div><div>What the SQL recovered</div><div></div></div>
+      <div class="rrow">
+        <div class="rrow__seed">Emergency Medicine is given a 50-minute base wait. Every other department starts between 12 and 36.</div>
+        <div class="rrow__found">Emergency averages <b>67.27 min</b> — fourteen minutes clear of the next worst department, and the only one that never sees a patient inside 30 minutes.</div>
+        <div class="rrow__ok"><span aria-label="Recovered">✓</span></div>
+      </div>
+      <div class="rrow">
+        <div class="rrow__seed">Satisfaction is a step function of wait: 25, 40, 55 and 70 minutes each cost a star.</div>
+        <div class="rrow__found">Every department's mean score lands exactly where its wait distribution puts it. Emergency sits at <b>1.75</b>; Cardiology, 26 minutes quicker, at <b>3.46</b>.</div>
+        <div class="rrow__ok"><span aria-label="Recovered">✓</span></div>
+      </div>
+      <div class="rrow">
+        <div class="rrow__seed">Annual volume steps up on fixed boundaries: 5,000 to 6,000 to 7,500 to 8,500 to 10,500 to 12,500.</div>
+        <div class="rrow__found">Year-over-year growth read back through <b>LAG</b>: 20.00, 25.00, 13.33, 23.53 and 19.05 percent.</div>
+        <div class="rrow__ok"><span aria-label="Recovered">✓</span></div>
+      </div>
+      <div class="rrow">
+        <div class="rrow__seed">486 patients are written in as one-time visitors; the other 1,945 are drawn from repeatedly.</div>
+        <div class="rrow__found">Repeat rate <b>80.01%</b> — 1,945 of 2,431 patients, averaging <b>20.57</b> visits each.</div>
+        <div class="rrow__ok"><span aria-label="Recovered">✓</span></div>
+      </div>
+      <div class="rrow">
+        <div class="rrow__seed">Emergency takes 3 of every 20 visits and Cardiology 2, on top of the even spread across all 33.</div>
+        <div class="rrow__found">Emergency <b>8,638</b> visits and Cardiology <b>6,135</b>, against roughly 1,137 for a typical department.</div>
+        <div class="rrow__ok"><span aria-label="Recovered">✓</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <span>SQL Server 2022 · T-SQL · 50,000 rows re-aggregated in the browser on every click</span>
+    <span>Amounts are synthetic Indian rupees</span>
+    <span class="badge" id="provenance"></span>
+  </div>
+</footer>
+
+</div>
+
+<div class="wrap boot" id="boot">Loading 50,000 visits…</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var META = window.HOSPITAL_META, B64 = window.HOSPITAL_FACTS;
+  var boot = document.getElementById("boot");
+  if (!META || !B64) {
+    boot.textContent = "data.js did not load. Rebuild it with "
+      + "scripts/build_dashboard_data.py, or serve this folder over http.";
+    return;
+  }
+
+  // ---- unpack ---------------------------------------------------------
+  // Columns sit end to end in the order documented in build_dashboard_data.py.
+  var N = META.rows;
+  var bin = atob(B64), raw = new Uint8Array(bin.length), i;
+  for (i = 0; i < bin.length; i++) raw[i] = bin.charCodeAt(i);
+
+  var COL = {
+    dept: raw.subarray(N, 2 * N),
+    pay:  raw.subarray(2 * N, 3 * N),
+    age:  raw.subarray(3 * N, 4 * N),
+    doc:  raw.subarray(4 * N, 5 * N),
+    sat:  raw.subarray(5 * N, 6 * N),
+    wait: raw.subarray(6 * N, 7 * N),
+    bill: new Uint16Array(raw.buffer, 7 * N, N),
+    pat:  new Uint16Array(raw.buffer, 9 * N, N)
+  };
+
+  var DEPTS = META.departments, PAYS = META.payments, AGES = META.ageBands,
+      DOCTORS = META.doctors, MONTHS = META.months, BASE = META.baseYear,
+      BILL0 = META.billOffset, NPAT = META.patients;
+
+  var YEARS = [];
+  for (i = 0; i < MONTHS / 12; i++) YEARS.push(BASE + i);
+
+  // Month, year and the weekend flag are packed into one byte. Split once.
+  var MONTH = new Uint8Array(N), YEAR = new Uint8Array(N), WKND = new Uint8Array(N);
+  for (i = 0; i < N; i++) {
+    var m = raw[i] & 0x7f;
+    MONTH[i] = m; YEAR[i] = (m / 12) | 0; WKND[i] = raw[i] >> 7;
+  }
+
+  var WAITMAX = 96;                    // waits run 12..88; pad to a round bucket count
+  var THRESHOLDS = [25, 40, 55, 70];   // each one costs a star
+  var SCALE_MAX = 95;                  // x-axis of the triage board, in minutes
+  var RAMP = ["", "--s1", "--s2", "--s3", "--s4", "--s5"];
+
+  function ramp(band) { return "var(" + RAMP[band] + ")"; }
+  function bandOf(score) {
+    var b = Math.round(score);
+    return b < 1 ? 1 : b > 5 ? 5 : b;
+  }
+  function tierOfWait(minutes) {
+    return minutes <= 25 ? 5 : minutes <= 40 ? 4 : minutes <= 55 ? 3 : minutes <= 70 ? 2 : 1;
+  }
+
+  // ---- formatting -----------------------------------------------------
+  var NF = new Intl.NumberFormat("en-IN");
+  function num(v) { return NF.format(Math.round(v)); }
+  function inr(v) {
+    if (v >= 1e7) return "₹" + (v / 1e7).toFixed(2) + " Cr";
+    if (v >= 1e5) return "₹" + (v / 1e5).toFixed(2) + " L";
+    return "₹" + NF.format(Math.round(v));
+  }
+  function pct(part, whole, dp) { return whole ? (100 * part / whole).toFixed(dp || 1) + "%" : "—"; }
+  var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function monthLabel(index) { return MONTH_NAMES[index % 12] + " " + (BASE + ((index / 12) | 0)); }
+
+  // ---- filter state ---------------------------------------------------
+  var state = { years: new Set(), days: new Set(), depts: new Set(), pays: new Set(), ages: new Set() };
+  var sort = { key: "visits", dir: -1 };
+  var trendMetric = "visits";
+
+  function anyFilter() {
+    return !!(state.years.size || state.days.size || state.depts.size
+           || state.pays.size || state.ages.size);
+  }
+  function toggle(set, value) { if (set.has(value)) set.delete(value); else set.add(value); }
+
+  // Sets are right for the chips, but the aggregation loop runs 50,000 times,
+  // so flatten each filter into a lookup array first. Empty means "all".
+  function maskFrom(set, size) {
+    var mask = new Uint8Array(size);
+    if (!set.size) { mask.fill(1); return mask; }
+    set.forEach(function (v) { mask[v] = 1; });
+    return mask;
+  }
+
+  // ---- aggregation ----------------------------------------------------
+  function aggregate() {
+    var yOn = maskFrom(state.years, YEARS.length),
+        dOn = maskFrom(state.days, 2),
+        pOn = maskFrom(state.pays, PAYS.length),
+        aOn = maskFrom(state.ages, AGES.length),
+        deptOn = maskFrom(state.depts, DEPTS.length);
+
+    var a = {
+      n: 0, bill: 0, wait: 0, sat: 0, within30: 0,
+      deptN: new Int32Array(DEPTS.length), deptBill: new Float64Array(DEPTS.length),
+      deptWait: new Float64Array(DEPTS.length), deptSat: new Float64Array(DEPTS.length),
+      deptHist: new Int32Array(DEPTS.length * WAITMAX),
+      payN: new Int32Array(PAYS.length), payBill: new Float64Array(PAYS.length),
+      ageN: new Int32Array(AGES.length), ageBill: new Float64Array(AGES.length),
+      monN: new Int32Array(MONTHS), monBill: new Float64Array(MONTHS),
+      monWait: new Float64Array(MONTHS),
+      docN: new Int32Array(DOCTORS.length), docSat: new Float64Array(DOCTORS.length),
+      docWait: new Float64Array(DOCTORS.length),
+      patN: new Int32Array(NPAT), satDist: new Int32Array(6)
+    };
+
+    for (var r = 0; r < N; r++) {
+      if (!yOn[YEAR[r]] || !dOn[WKND[r]]) continue;
+      var d = COL.dept[r]; if (!deptOn[d]) continue;
+      var p = COL.pay[r];  if (!pOn[p]) continue;
+      var g = COL.age[r];  if (!aOn[g]) continue;
+
+      var amount = COL.bill[r] + BILL0, w = COL.wait[r], s = COL.sat[r], mo = MONTH[r];
+      a.n++; a.bill += amount; a.wait += w; a.sat += s; a.satDist[s]++;
+      if (w <= 30) a.within30++;
+      a.deptN[d]++; a.deptBill[d] += amount; a.deptWait[d] += w; a.deptSat[d] += s;
+      a.deptHist[d * WAITMAX + w]++;
+      a.payN[p]++; a.payBill[p] += amount;
+      a.ageN[g]++; a.ageBill[g] += amount;
+      a.monN[mo]++; a.monBill[mo] += amount; a.monWait[mo] += w;
+      var doc = COL.doc[r]; a.docN[doc]++; a.docSat[doc] += s; a.docWait[doc] += w;
+      a.patN[COL.pat[r]]++;
+    }
+
+    a.patients = 0; a.repeat = 0;
+    for (r = 0; r < NPAT; r++) {
+      if (a.patN[r] > 0) { a.patients++; if (a.patN[r] > 1) a.repeat++; }
+    }
+    return a;
+  }
+
+  // Percentile and threshold counts come straight off the wait histogram.
+  function percentile(hist, base, count, p) {
+    var target = Math.max(1, Math.ceil(p * count)), cum = 0;
+    for (var v = 0; v < WAITMAX; v++) {
+      cum += hist[base + v];
+      if (cum >= target) return v;
+    }
+    return WAITMAX - 1;
+  }
+  function countUpTo(hist, base, minutes) {
+    var total = 0;
+    for (var v = 0; v <= minutes && v < WAITMAX; v++) total += hist[base + v];
+    return total;
+  }
+
+  var BASELINE = null;   // unfiltered aggregate, so KPIs can show a comparison
+
+  // ---- chips: built once, state synced on every render ------------------
+  function makeChip(label, onClick) {
+    var b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.textContent = label;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  var yearChips = [], dayChips = [], trendChips = [];
+  var TREND = {
+    visits:  { label: "Visits per month", chip: "Visits",
+               get: function (a, m) { return a.monN[m]; },
+               fmt: function (v) { return num(v) + " visits"; } },
+    revenue: { label: "Billed revenue per month", chip: "Revenue",
+               get: function (a, m) { return a.monBill[m]; },
+               fmt: function (v) { return inr(v); } },
+    wait:    { label: "Average wait per month", chip: "Avg wait",
+               get: function (a, m) { return a.monN[m] ? a.monWait[m] / a.monN[m] : 0; },
+               fmt: function (v) { return v.toFixed(1) + " min"; } }
+  };
+  var TREND_ORDER = ["visits", "revenue", "wait"];
+
+  function buildControls() {
+    var yc = document.getElementById("yearChips");
+    YEARS.forEach(function (year, index) {
+      var c = makeChip(String(year), function () { toggle(state.years, index); render(); });
+      yearChips.push(c); yc.appendChild(c);
+    });
+    var dc = document.getElementById("dayChips");
+    ["Weekdays", "Weekends"].forEach(function (label, index) {
+      var c = makeChip(label, function () { toggle(state.days, index); render(); });
+      dayChips.push(c); dc.appendChild(c);
+    });
+    var tc = document.getElementById("trendToggle");
+    TREND_ORDER.forEach(function (key) {
+      var c = makeChip(TREND[key].chip, function () { trendMetric = key; render(); });
+      trendChips.push(c); tc.appendChild(c);
+    });
+  }
+
+  function syncControls() {
+    yearChips.forEach(function (c, index) {
+      c.setAttribute("aria-pressed", state.years.has(index) ? "true" : "false");
+    });
+    dayChips.forEach(function (c, index) {
+      c.setAttribute("aria-pressed", state.days.has(index) ? "true" : "false");
+    });
+    trendChips.forEach(function (c, index) {
+      c.setAttribute("aria-pressed", TREND_ORDER[index] === trendMetric ? "true" : "false");
+    });
+  }
+
+  function renderPills() {
+    var host = document.getElementById("activePills");
+    host.textContent = "";
+    function add(label, clear) {
+      var b = document.createElement("button");
+      b.className = "pill"; b.type = "button";
+      b.appendChild(document.createTextNode(label));
+      var x = document.createElement("span");
+      x.textContent = "×"; x.setAttribute("aria-hidden", "true");
+      b.appendChild(x);
+      b.setAttribute("aria-label", "Remove filter: " + label);
+      b.addEventListener("click", function () { clear(); render(); });
+      host.appendChild(b);
+    }
+    state.depts.forEach(function (d) { add(DEPTS[d].name, function () { state.depts.delete(d); }); });
+    state.pays.forEach(function (p) { add(PAYS[p], function () { state.pays.delete(p); }); });
+    state.ages.forEach(function (g) { add("Age " + AGES[g], function () { state.ages.delete(g); }); });
+  }
+
+  // ---- triage board ---------------------------------------------------
+  function pos(minutes) { return (minutes / SCALE_MAX) * 100; }
+
+  function buildScale() {
+    var scale = document.getElementById("scale");
+    THRESHOLDS.forEach(function (t) {
+      var label = document.createElement("span");
+      label.className = "scale__t";
+      label.style.left = pos(t) + "%";
+      label.textContent = t + " min";
+      scale.appendChild(label);
+    });
+  }
+
+  function renderBoard(a) {
+    var host = document.getElementById("board"), rows = [], d;
+    for (d = 0; d < DEPTS.length; d++) {
+      if (!a.deptN[d]) continue;
+      var base = d * WAITMAX;
+      rows.push({
+        id: d, n: a.deptN[d],
+        p10: percentile(a.deptHist, base, a.deptN[d], 0.10),
+        p50: percentile(a.deptHist, base, a.deptN[d], 0.50),
+        p90: percentile(a.deptHist, base, a.deptN[d], 0.90)
+      });
+    }
+    rows.sort(function (x, z) { return z.p50 - x.p50 || z.n - x.n; });
+
+    host.textContent = "";
+    if (!rows.length) {
+      var none = document.createElement("p");
+      none.className = "empty";
+      none.textContent = "No visits match these filters. Clear one to bring the board back.";
+      host.appendChild(none);
+      return;
+    }
+
+    rows.forEach(function (row) {
+      var colour = ramp(tierOfWait(row.p50));
+      var b = document.createElement("button");
+      b.className = "brow"; b.type = "button";
+      b.setAttribute("aria-pressed", state.depts.has(row.id) ? "true" : "false");
+      var summary = DEPTS[row.id].name + " — median wait " + row.p50 + " min, "
+        + "10th to 90th percentile " + row.p10 + " to " + row.p90 + " min, "
+        + num(row.n) + " visits";
+      b.title = summary;
+      b.setAttribute("aria-label", summary);
+
+      var name = document.createElement("span");
+      name.className = "brow__name"; name.textContent = DEPTS[row.id].name;
+
+      var plot = document.createElement("span");
+      plot.className = "brow__plot";
+      var zones = document.createElement("span");
+      zones.className = "zones";
+      THRESHOLDS.forEach(function (t) {
+        var line = document.createElement("span");
+        line.className = "zline"; line.style.left = pos(t) + "%";
+        zones.appendChild(line);
+      });
+      plot.appendChild(zones);
+
+      var range = document.createElement("span");
+      range.className = "brow__range";
+      range.style.left = pos(row.p10).toFixed(2) + "%";
+      range.style.width = Math.max(0.6, pos(row.p90) - pos(row.p10)).toFixed(2) + "%";
+      range.style.background = colour;
+      plot.appendChild(range);
+
+      var dot = document.createElement("span");
+      dot.className = "brow__dot";
+      dot.style.left = pos(row.p50).toFixed(2) + "%";
+      dot.style.background = colour;
+      plot.appendChild(dot);
+
+      var nums = document.createElement("span");
+      nums.className = "brow__nums";
+      var strong = document.createElement("b");
+      strong.textContent = row.p50 + " min";
+      var sub = document.createElement("i");
+      sub.textContent = num(row.n);
+      nums.appendChild(strong); nums.appendChild(sub);
+
+      b.appendChild(name); b.appendChild(plot); b.appendChild(nums);
+      b.addEventListener("click", function () { toggle(state.depts, row.id); render(); });
+      host.appendChild(b);
+    });
+  }
+
+  // ---- KPI strip ------------------------------------------------------
+  function renderKpis(a) {
+    var filtered = anyFilter(), host = document.getElementById("kpis");
+    var happy = a.satDist[4] + a.satDist[5];
+
+    function delta(current, baseline, format, lowerIsBetter) {
+      var diff = current - baseline;
+      if (!isFinite(diff) || Math.abs(diff) < 1e-9) return { text: "same as all visits", dir: null };
+      var better = lowerIsBetter ? diff < 0 : diff > 0;
+      return {
+        text: (diff > 0 ? "+" : "−") + format(Math.abs(diff)) + " vs all visits",
+        dir: better ? "up" : "down"
+      };
+    }
+
+    var tiles = [
+      { k: "Visits", v: num(a.n),
+        sub: filtered ? { text: pct(a.n, BASELINE.n) + " of all visits" }
+                      : { text: num(a.patients) + " distinct patients" } },
+      { k: "Billed revenue", v: a.n ? inr(a.bill) : "—",
+        sub: filtered ? { text: pct(a.bill, BASELINE.bill) + " of all revenue" }
+                      : { text: "six years, 33 departments" } },
+      { k: "Average bill", v: a.n ? inr(a.bill / a.n) : "—",
+        sub: filtered && a.n
+          ? delta(a.bill / a.n, BASELINE.bill / BASELINE.n, inr, false)
+          : { text: "per visit" } },
+      { k: "Average wait", v: a.n ? (a.wait / a.n).toFixed(1) + " min" : "—",
+        sub: filtered && a.n
+          ? delta(a.wait / a.n, BASELINE.wait / BASELINE.n,
+              function (x) { return x.toFixed(1) + " min"; }, true)
+          : { text: pct(a.within30, a.n) + " seen within 30 min" } },
+      { k: "Satisfaction", v: a.n ? (a.sat / a.n).toFixed(2) + " / 5" : "—",
+        sub: filtered && a.n
+          ? delta(a.sat / a.n, BASELINE.sat / BASELINE.n,
+              function (x) { return x.toFixed(2); }, false)
+          : { text: pct(happy, a.n) + " rate it 4 or 5" } },
+      { k: "Repeat patients", v: a.patients ? pct(a.repeat, a.patients) : "—",
+        sub: { text: a.patients ? num(a.repeat) + " of " + num(a.patients) + " patients" : "" } }
+    ];
+
+    host.textContent = "";
+    tiles.forEach(function (tile) {
+      var cell = document.createElement("div"); cell.className = "kpi";
+      var k = document.createElement("p"); k.className = "kpi__k"; k.textContent = tile.k;
+      var v = document.createElement("p"); v.className = "kpi__v"; v.textContent = tile.v;
+      var s = document.createElement("p"); s.className = "kpi__d";
+      s.textContent = tile.sub && tile.sub.text ? tile.sub.text : "";
+      if (tile.sub && tile.sub.dir) s.setAttribute("data-dir", tile.sub.dir);
+      cell.appendChild(k); cell.appendChild(v); cell.appendChild(s);
+      host.appendChild(cell);
+    });
+  }
+
+  // ---- monthly trend --------------------------------------------------
+  var trendSeries = [], trendPeak = 1;
+  var PLOT = { w: 1000, h: 200, top: 12, bottom: 192 };
+
+  function renderTrend(a) {
+    var spec = TREND[trendMetric];
+    document.getElementById("trendLabel").textContent = spec.label;
+
+    trendSeries = []; trendPeak = 0;
+    for (var m = 0; m < MONTHS; m++) {
+      var v = spec.get(a, m);
+      trendSeries.push(v);
+      if (v > trendPeak) trendPeak = v;
+    }
+    if (!trendPeak) trendPeak = 1;
+
+    function x(index) { return (index / (MONTHS - 1)) * PLOT.w; }
+    function y(value) { return PLOT.bottom - (value / trendPeak) * (PLOT.bottom - PLOT.top); }
+
+    var line = "", k;
+    for (k = 0; k < MONTHS; k++) {
+      line += (k ? "L" : "M") + x(k).toFixed(2) + " " + y(trendSeries[k]).toFixed(2) + " ";
+    }
+    var area = "M0 " + PLOT.bottom + " L" + line.trim().slice(1)
+             + " L" + PLOT.w + " " + PLOT.bottom + " Z";
+
+    var grid = "";
+    [0.25, 0.5, 0.75, 1].forEach(function (f) {
+      var gy = (PLOT.bottom - f * (PLOT.bottom - PLOT.top)).toFixed(1);
+      grid += '<line class="trend__grid" x1="0" y1="' + gy + '" x2="1000" y2="' + gy
+           + '" vector-effect="non-scaling-stroke"/>';
+    });
+
+    document.getElementById("trendSvg").innerHTML = grid
+      + '<path class="trend__area" d="' + area + '"/>'
+      + '<path class="trend__line" d="' + line.trim() + '" vector-effect="non-scaling-stroke"/>';
+  }
+
+  function wireTrend() {
+    var hit = document.getElementById("trendHit"),
+        canvas = document.getElementById("trendCanvas"),
+        cursor = document.getElementById("trendCursor"),
+        dot = document.getElementById("trendDot"),
+        tip = document.getElementById("trendTip");
+
+    function show(event) {
+      var box = hit.getBoundingClientRect();
+      var clientX = event.touches ? event.touches[0].clientX : event.clientX;
+      var ratio = Math.min(1, Math.max(0, (clientX - box.left) / box.width));
+      var index = Math.round(ratio * (MONTHS - 1));
+      var value = trendSeries[index] || 0;
+      // Percentages are relative to .trend__canvas, which matches the viewBox.
+      var left = (index / (MONTHS - 1)) * 100;
+      var top = (PLOT.bottom - (value / trendPeak) * (PLOT.bottom - PLOT.top)) / PLOT.h * 100;
+
+      cursor.style.display = dot.style.display = tip.style.display = "block";
+      cursor.style.left = left + "%";
+      dot.style.left = left + "%"; dot.style.top = top + "%";
+      tip.style.left = Math.min(90, Math.max(10, left)) + "%";
+      tip.style.top = top + "%";
+      tip.textContent = monthLabel(index) + " · " + TREND[trendMetric].fmt(value);
+    }
+    function hide() { cursor.style.display = dot.style.display = tip.style.display = "none"; }
+
+    hit.addEventListener("mousemove", show);
+    hit.addEventListener("touchstart", show, { passive: true });
+    hit.addEventListener("touchmove", show, { passive: true });
+    hit.addEventListener("touchend", hide);
+    canvas.addEventListener("mouseleave", hide);
+  }
+
+  // ---- bar panels -----------------------------------------------------
+  // format(value, count) so a caller can show a total or an average.
+  function renderBars(hostId, labels, counts, values, format, selected, onToggle) {
+    var host = document.getElementById(hostId), peak = 0, k;
+    for (k = 0; k < labels.length; k++) if (counts[k] > peak) peak = counts[k];
+    if (!peak) peak = 1;
+
+    host.textContent = "";
+    labels.forEach(function (label, index) {
+      var li = document.createElement("li");
+      var b = document.createElement("button");
+      b.className = "bar"; b.type = "button";
+      b.setAttribute("aria-pressed", selected.has(index) ? "true" : "false");
+      if (selected.size) b.dataset.dim = "1";
+
+      var key = document.createElement("span");
+      key.className = "bar__k"; key.textContent = label;
+      var val = document.createElement("span");
+      val.className = "bar__v";
+      val.textContent = num(counts[index]) + "  ·  " + format(values[index], counts[index]);
+      var track = document.createElement("span"); track.className = "bar__t";
+      var fill = document.createElement("span"); fill.className = "bar__f";
+      fill.style.width = (100 * counts[index] / peak).toFixed(2) + "%";
+      track.appendChild(fill);
+
+      b.appendChild(key); b.appendChild(val); b.appendChild(track);
+      b.addEventListener("click", function () { onToggle(index); render(); });
+      li.appendChild(b); host.appendChild(li);
+    });
+  }
+
+  // ---- department table -----------------------------------------------
+  var COLUMNS = [
+    { key: "name", label: "Department", text: true },
+    { key: "category", label: "Category", text: true },
+    { key: "visits", label: "Visits" },
+    { key: "revenue", label: "Revenue" },
+    { key: "avgbill", label: "Avg bill" },
+    { key: "wait", label: "Avg wait" },
+    { key: "sat", label: "Avg satisfaction" },
+    { key: "within30", label: "Seen within 30 min" }
+  ];
+
+  function buildDeptHead() {
+    var head = document.getElementById("deptHead");
+    COLUMNS.forEach(function (column) {
+      var th = document.createElement("th");
+      var b = document.createElement("button");
+      b.className = "sortbtn"; b.type = "button"; b.textContent = column.label;
+      b.addEventListener("click", function () {
+        if (sort.key === column.key) sort.dir = -sort.dir;
+        else { sort.key = column.key; sort.dir = column.text ? 1 : -1; }
+        render();
+      });
+      th.appendChild(b); head.appendChild(th);
+    });
+  }
+
+  function renderDeptTable(a) {
+    var body = document.getElementById("deptBody"), rows = [], d;
+    for (d = 0; d < DEPTS.length; d++) {
+      if (!a.deptN[d]) continue;
+      var base = d * WAITMAX;
+      rows.push({
+        id: d, name: DEPTS[d].name, category: DEPTS[d].category,
+        visits: a.deptN[d], revenue: a.deptBill[d],
+        avgbill: a.deptBill[d] / a.deptN[d],
+        wait: a.deptWait[d] / a.deptN[d],
+        sat: a.deptSat[d] / a.deptN[d],
+        within30: 100 * countUpTo(a.deptHist, base, 30) / a.deptN[d]
+      });
+    }
+    rows.sort(function (x, z) {
+      var left = x[sort.key], right = z[sort.key];
+      if (typeof left === "string") return sort.dir * left.localeCompare(right);
+      return sort.dir * (left - right);
+    });
+
+    var heads = document.getElementById("deptHead").children, k;
+    for (k = 0; k < heads.length; k++) {
+      if (COLUMNS[k].key === sort.key) {
+        heads[k].setAttribute("aria-sort", sort.dir > 0 ? "ascending" : "descending");
+      } else heads[k].removeAttribute("aria-sort");
+    }
+
+    body.textContent = "";
+    if (!rows.length) {
+      var tr0 = document.createElement("tr"), td0 = document.createElement("td");
+      td0.colSpan = COLUMNS.length; td0.className = "empty";
+      td0.textContent = "Nothing matches these filters.";
+      tr0.appendChild(td0); body.appendChild(tr0);
+      return;
+    }
+
+    rows.forEach(function (row) {
+      var tr = document.createElement("tr");
+      tr.setAttribute("aria-selected", state.depts.has(row.id) ? "true" : "false");
+      tr.tabIndex = 0;
+
+      var cells = ["", row.category, num(row.visits), inr(row.revenue), inr(row.avgbill),
+                   row.wait.toFixed(1) + " min", row.sat.toFixed(2),
+                   row.within30.toFixed(1) + "%"];
+      cells.forEach(function (value, index) {
+        var td = document.createElement("td");
+        if (index === 0) {
+          var mark = document.createElement("span");
+          mark.className = "dotmark";
+          mark.style.background = ramp(bandOf(row.sat));
+          mark.title = "Average satisfaction " + row.sat.toFixed(2);
+          td.appendChild(mark);
+          td.appendChild(document.createTextNode(row.name));
+        } else if (index === 1) {
+          var cat = document.createElement("span");
+          cat.className = "cat"; cat.textContent = value;
+          td.appendChild(cat);
+        } else td.textContent = value;
+        tr.appendChild(td);
+      });
+
+      function pick() { toggle(state.depts, row.id); render(); }
+      tr.addEventListener("click", pick);
+      tr.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); pick(); }
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  // ---- doctor leaderboard ---------------------------------------------
+  // Mirrors q10_top_doctors.sql: a minimum caseload, then DENSE_RANK over
+  // (satisfaction desc, wait asc, visits desc). The threshold scales with the
+  // filter, since slicing to a single year would otherwise empty the table.
+  function renderDoctors(a) {
+    var minimum = anyFilter() ? Math.max(10, Math.round(100 * a.n / N)) : 100;
+    var eligible = [], k;
+    for (k = 0; k < DOCTORS.length; k++) {
+      if (a.docN[k] < minimum) continue;
+      eligible.push({ id: k, name: DOCTORS[k], visits: a.docN[k],
+        sat: a.docSat[k] / a.docN[k], wait: a.docWait[k] / a.docN[k] });
+    }
+    eligible.sort(function (x, z) {
+      return (z.sat - x.sat) || (x.wait - z.wait) || (z.visits - x.visits) || (x.id - z.id);
+    });
+
+    document.getElementById("docCaption").textContent =
+      "Ranked the way the warehouse ranks them — average satisfaction first, then the "
+      + "shorter queue, then the heavier caseload. A doctor needs at least " + num(minimum)
+      + " visits in the current selection to qualify"
+      + (anyFilter() ? ", scaled down from 100 as you filter." : ".");
+
+    var body = document.getElementById("docBody");
+    body.textContent = "";
+    if (!eligible.length) {
+      var tr0 = document.createElement("tr"), td0 = document.createElement("td");
+      td0.colSpan = 5; td0.className = "empty";
+      td0.textContent = "No doctor has enough visits in this selection to rank.";
+      tr0.appendChild(td0); body.appendChild(tr0);
+      return;
+    }
+
+    // DENSE_RANK: equal keys share a rank, and the next rank is not skipped.
+    var rank = 0, previous = null;
+    for (k = 0; k < eligible.length; k++) {
+      var row = eligible[k];
+      var key = row.sat + "|" + row.wait + "|" + row.visits;
+      if (key !== previous) { rank++; previous = key; }
+      if (rank > 10) break;
+
+      var tr = document.createElement("tr");
+      [String(rank), row.name, num(row.visits), row.sat.toFixed(2),
+       row.wait.toFixed(2) + " min"].forEach(function (value, index) {
+        var td = document.createElement("td");
+        if (index === 0) td.className = "rank";
+        if (index === 1) {
+          var mark = document.createElement("span");
+          mark.className = "dotmark";
+          mark.style.background = ramp(bandOf(row.sat));
+          td.appendChild(mark);
+          td.appendChild(document.createTextNode(value));
+        } else td.textContent = value;
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    }
+  }
+
+  // ---- render ---------------------------------------------------------
+  function render() {
+    var a = aggregate();
+    if (!BASELINE) BASELINE = a;
+
+    syncControls();
+    renderPills();
+    renderBoard(a);
+    renderKpis(a);
+    renderTrend(a);
+    renderBars("payBars", PAYS, a.payN, a.payBill,
+      function (total) { return inr(total); },
+      state.pays, function (index) { toggle(state.pays, index); });
+    renderBars("ageBars", AGES, a.ageN, a.ageBill,
+      function (total, count) { return "avg " + inr(count ? total / count : 0); },
+      state.ages, function (index) { toggle(state.ages, index); });
+    renderDeptTable(a);
+    renderDoctors(a);
+
+    var count = document.getElementById("count");
+    count.textContent = "";
+    var b = document.createElement("b"); b.textContent = num(a.n);
+    count.appendChild(b);
+    count.appendChild(document.createTextNode(" of " + num(N) + " visits"));
+    document.getElementById("reset").hidden = !anyFilter();
+  }
+
+  document.getElementById("reset").addEventListener("click", function () {
+    state.years.clear(); state.days.clear(); state.depts.clear();
+    state.pays.clear(); state.ages.clear();
+    render();
+  });
+
+  // ---- repository links + provenance badge ------------------------------
+  (function links() {
+    // Resolves on <account>.github.io/<repo>/ without hardcoding the account.
+    var repo = location.pathname.split("/").filter(Boolean)[0];
+    var base = location.hostname.indexOf("github.io") > -1 && repo
+      ? "https://github.com/" + location.hostname.split(".")[0] + "/" + repo
+      : null;
+    var targets = { repo: "", queries: "/tree/main/analysis/queries", exports: "/tree/main/exports" };
+    Array.prototype.forEach.call(document.querySelectorAll("[data-link]"), function (a) {
+      if (base) a.href = base + targets[a.dataset.link];
+      else { a.style.opacity = ".4"; a.title = "Available on the published site"; }
+    });
+    var badge = document.getElementById("provenance");
+    badge.textContent = META.provenance === "sqlserver"
+      ? "Figures exported from SQL Server"
+      : "Figures rebuilt by the Python oracle";
+    badge.title = "Both paths are cross-checked by tests/verify_results.py.";
+  })();
+
+  buildControls();
+  buildScale();
+  buildDeptHead();
+  wireTrend();
+  render();
+  boot.hidden = true;
+  document.getElementById("app").hidden = false;
+
+  // Test hook. tests/verify_dashboard_js.mjs drives these exact functions
+  // against exports/*.csv, so the browser aggregation is checked rather than a
+  // Node-side copy of it. Harmless in a browser; nothing reads it there.
+  window.__dashboard = {
+    aggregate: aggregate, percentile: percentile, countUpTo: countUpTo,
+    state: state, render: render, WAITMAX: WAITMAX, baseline: function () { return BASELINE; }
+  };
+})();
+</script>
+</body>
+</html>

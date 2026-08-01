@@ -1,0 +1,5 @@
+PaymentMethodID,PaymentMethod
+PM01,Cash
+PM02,Debit Card
+PM03,Credit Card
+PM04,UPI

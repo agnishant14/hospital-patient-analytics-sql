@@ -1,0 +1,31 @@
+TreatmentID,TreatmentName
+TR01,ECG
+TR02,Blood Sugar Test
+TR03,MRI Scan
+TR04,CT Scan
+TR05,X-Ray
+TR06,Ultrasound
+TR07,Physical Therapy
+TR08,Chemotherapy
+TR09,Radiation Therapy
+TR10,Cardiac Catheterization
+TR11,Angioplasty
+TR12,Joint Replacement Surgery
+TR13,Knee Arthroscopy
+TR14,Appendectomy
+TR15,Liver Function Test
+TR16,Dialysis
+TR17,Stress Test
+TR18,Endoscopy
+TR19,Colonoscopy
+TR20,Psychiatric Counseling
+TR21,Antibiotic Treatment
+TR22,Blood Transfusion
+TR23,Hypertension Medication
+TR24,Insulin Therapy
+TR25,Wound Dressing
+TR26,Intensive Care Monitoring
+TR27,Sleep Study
+TR28,Occupational Therapy
+TR29,Vaccination
+TR30,Pain Management Injection

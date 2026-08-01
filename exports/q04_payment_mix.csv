@@ -1,0 +1,5 @@
+PaymentMethod,TotalVisits,TotalRevenueINR,RevenueSharePercent
+Cash,13888,441398432.00,27.86
+Credit Card,13889,438799212.00,27.69
+Debit Card,11112,352188747.00,22.23
+UPI,11111,352092804.00,22.22

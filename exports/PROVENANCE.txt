@@ -1,0 +1,10 @@
+source: oracle
+generated-by: scripts/build_exports.py
+
+These CSVs were produced by the Python oracle, not by SQL Server.
+They are a deterministic bootstrap so that the Power BI kit and the
+web dashboard work on a machine without SQL Server.
+
+To make them authoritative, run the real pipeline and re-export:
+    ./scripts/export_from_sqlserver.sh
+    python3 tests/verify_results.py

@@ -1,0 +1,41 @@
+DiagnosisName,TreatmentName,TreatmentCount
+Acute Appendicitis,Blood Transfusion,862
+Acute Bronchitis,MRI Scan,1002
+Acute Kidney Injury,Physical Therapy,890
+Alcohol Use Disorder,CT Scan,1001
+Allergic Rhinitis,Cardiac Catheterization,726
+Alzheimer''s Disease,Blood Sugar Test,1019
+Anemia,Insulin Therapy,869
+Anxiety Disorder,Colonoscopy,690
+Atrial Fibrillation,Radiation Therapy,731
+Back Pain (Low Back Pain),Pain Management Injection,861
+Cellulitis,Intensive Care Monitoring,724
+Chronic Fatigue Syndrome,Radiation Therapy,1011
+Chronic Kidney Disease,Joint Replacement Surgery,866
+Chronic Liver Disease,MRI Scan,737
+Chronic Obstructive Pulmonary Disease (COPD),X-Ray,890
+Coronary Artery Disease,Ultrasound,1017
+Depression,Endoscopy,885
+Dermatitis / Eczema,Sleep Study,998
+Fracture - Hip,Vaccination,1018
+Fracture - Wrist,Occupational Therapy,724
+Gallstones (Cholelithiasis),Hypertension Medication,854
+Gastroesophageal Reflux Disease (GERD),Cardiac Catheterization,1021
+Heart Failure,Physical Therapy,705
+Hypertension,ECG,1039
+Hyperthyroidism,Liver Function Test,856
+Hypothyroidism,Appendectomy,735
+Infectious Diarrhea,Wound Dressing,1040
+Migraine,Psychiatric Counseling,1012
+Obsessive Compulsive Disorder,Chemotherapy,870
+Osteoarthritis,Dialysis,858
+Parkinson''s Disease,ECG,870
+Peptic Ulcer Disease,Angioplasty,855
+Pneumonia,CT Scan,863
+Pneumothorax,X-Ray,714
+Rheumatoid Arthritis,Stress Test,1011
+Seizure Disorder / Epilepsy,Antibiotic Treatment,882
+Sepsis,Ultrasound,1020
+Stroke (Cerebrovascular Accident),Chemotherapy,1028
+Type 2 Diabetes Mellitus,Blood Sugar Test,723
+Urolithiasis (Kidney Stones),Knee Arthroscopy,1021

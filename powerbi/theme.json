@@ -1,0 +1,236 @@
+{
+  "name": "Hospital Ops",
+  "dataColors": [
+    "#2E7D74",
+    "#1C544E",
+    "#7CAE9E",
+    "#4A5C64",
+    "#A8BFB8",
+    "#7C8C92",
+    "#B7C8C2",
+    "#16232B"
+  ],
+  "good": "#2E7D74",
+  "neutral": "#C9A227",
+  "bad": "#AE3B49",
+  "maximum": "#1C544E",
+  "center": "#C9A227",
+  "minimum": "#AE3B49",
+  "null": "#DEE6E3",
+  "background": "#FFFFFF",
+  "secondaryBackground": "#E8EDEB",
+  "foreground": "#16232B",
+  "tableAccent": "#2E7D74",
+  "textClasses": {
+    "callout": {
+      "fontSize": 30,
+      "fontFace": "DIN",
+      "color": "#16232B"
+    },
+    "title": {
+      "fontSize": 11,
+      "fontFace": "DIN",
+      "color": "#16232B"
+    },
+    "header": {
+      "fontSize": 10,
+      "fontFace": "Segoe UI Semibold",
+      "color": "#16232B"
+    },
+    "label": {
+      "fontSize": 9,
+      "fontFace": "Segoe UI",
+      "color": "#4A5C64"
+    }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#FFFFFF" } },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#DEE6E3" } },
+            "radius": 3
+          }
+        ],
+        "dropShadow": [{ "show": false }],
+        "visualHeader": [
+          {
+            "show": true,
+            "background": { "solid": { "color": "#FFFFFF" } },
+            "foreground": { "solid": { "color": "#7C8C92" } },
+            "border": { "solid": { "color": "#FFFFFF" } }
+          }
+        ],
+        "title": [
+          {
+            "show": true,
+            "alignment": "left",
+            "fontColor": { "solid": { "color": "#16232B" } },
+            "background": { "solid": { "color": "#FFFFFF" } }
+          }
+        ],
+        "categoryAxis": [
+          {
+            "show": true,
+            "showAxisTitle": false,
+            "labelColor": { "solid": { "color": "#7C8C92" } },
+            "gridlineShow": false,
+            "fontSize": 9
+          }
+        ],
+        "valueAxis": [
+          {
+            "show": true,
+            "showAxisTitle": false,
+            "labelColor": { "solid": { "color": "#7C8C92" } },
+            "gridlineShow": true,
+            "gridlineColor": { "solid": { "color": "#DEE6E3" } },
+            "gridlineThickness": 1,
+            "gridlineStyle": "solid",
+            "fontSize": 9
+          }
+        ],
+        "legend": [
+          {
+            "show": true,
+            "position": "TopLeft",
+            "showTitle": false,
+            "labelColor": { "solid": { "color": "#4A5C64" } },
+            "fontSize": 9
+          }
+        ],
+        "labels": [
+          {
+            "show": false,
+            "color": { "solid": { "color": "#16232B" } },
+            "fontSize": 9
+          }
+        ]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": { "solid": { "color": "#E8EDEB" } },
+            "transparency": 0
+          }
+        ],
+        "outspace": [
+          {
+            "color": { "solid": { "color": "#E8EDEB" } },
+            "transparency": 0
+          }
+        ]
+      }
+    },
+    "card": {
+      "*": {
+        "labels": [
+          {
+            "color": { "solid": { "color": "#16232B" } },
+            "fontSize": 30,
+            "fontFamily": "DIN"
+          }
+        ],
+        "categoryLabels": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#7C8C92" } },
+            "fontSize": 9,
+            "fontFamily": "Segoe UI"
+          }
+        ]
+      }
+    },
+    "slicer": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#FFFFFF" } }
+          }
+        ],
+        "items": [
+          {
+            "fontColor": { "solid": { "color": "#4A5C64" } },
+            "background": { "solid": { "color": "#FFFFFF" } },
+            "fontSize": 9
+          }
+        ],
+        "selection": [{ "singleSelect": false }]
+      }
+    },
+    "tableEx": {
+      "*": {
+        "grid": [
+          {
+            "gridVertical": false,
+            "gridHorizontal": true,
+            "gridHorizontalColor": { "solid": { "color": "#DEE6E3" } },
+            "outlineColor": { "solid": { "color": "#C7D3D0" } },
+            "outlineWeight": 1,
+            "rowPadding": 4
+          }
+        ],
+        "columnHeaders": [
+          {
+            "fontColor": { "solid": { "color": "#16232B" } },
+            "backColor": { "solid": { "color": "#FFFFFF" } },
+            "fontSize": 9,
+            "fontFamily": "Segoe UI Semibold",
+            "outline": "BottomOnly"
+          }
+        ],
+        "values": [
+          {
+            "fontColorPrimary": { "solid": { "color": "#16232B" } },
+            "backColorPrimary": { "solid": { "color": "#FFFFFF" } },
+            "fontColorSecondary": { "solid": { "color": "#16232B" } },
+            "backColorSecondary": { "solid": { "color": "#FFFFFF" } },
+            "fontSize": 9
+          }
+        ]
+      }
+    },
+    "pivotTable": {
+      "*": {
+        "grid": [
+          {
+            "gridVertical": false,
+            "gridHorizontal": true,
+            "gridHorizontalColor": { "solid": { "color": "#DEE6E3" } },
+            "outlineColor": { "solid": { "color": "#C7D3D0" } },
+            "rowPadding": 4
+          }
+        ],
+        "columnHeaders": [
+          {
+            "fontColor": { "solid": { "color": "#16232B" } },
+            "backColor": { "solid": { "color": "#FFFFFF" } },
+            "fontSize": 9,
+            "fontFamily": "Segoe UI Semibold",
+            "outline": "BottomOnly"
+          }
+        ],
+        "values": [
+          {
+            "fontColorPrimary": { "solid": { "color": "#16232B" } },
+            "backColorPrimary": { "solid": { "color": "#FFFFFF" } },
+            "fontColorSecondary": { "solid": { "color": "#16232B" } },
+            "backColorSecondary": { "solid": { "color": "#FFFFFF" } },
+            "fontSize": 9
+          }
+        ]
+      }
+    }
+  }
+}
