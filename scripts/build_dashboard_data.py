@@ -1,28 +1,3 @@
-"""Pack exports/ into the single binary payload the web dashboard reads.
-
-The dashboard re-aggregates all 50,000 fact rows in the browser on every filter
-change, so it needs the fact table itself, not pre-baked summaries. Shipping it
-as CSV would cost ~4.5 MB. Packed into typed-array columns it is 550 KB, or
-733 KB once base64-encoded into a .js file.
-
-Column layout of the payload (row order is VisitID order):
-
-    offset        bytes    column
-         0       50,000    monthweek  month index 0..71, weekend in bit 7
-    50,000       50,000    dept       0-based index into departments[]
-   100,000       50,000    pay        0-based index into payments[]
-   150,000       50,000    age        0-based index into ageBands[]
-   200,000       50,000    doctor     0-based index into doctors[]
-   250,000       50,000    sat        satisfaction score, 1..5
-   300,000       50,000    wait       wait minutes, fits a byte
-   350,000      100,000    bill       uint16 LE, BillAmount - BILL_OFFSET
-   450,000      100,000    patient    uint16 LE, index into patients[]
-                 -------
-                 550,000
-
-Usage:
-    python3 scripts/build_dashboard_data.py
-"""
 
 from __future__ import annotations
 

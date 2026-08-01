@@ -1,30 +1,3 @@
-"""Independent test oracle for the Hospital Patient Visits pipeline.
-
-Why this file exists
---------------------
-``data/04_generate_visits.sql`` seeds the warehouse with *known* patterns:
-Emergency Medicine is given the longest base wait, satisfaction is a declared
-step function of wait time, annual volume grows on fixed year boundaries, and a
-fixed share of patients is held back as one-time visitors.
-
-Those seeded patterns are the project's test fixtures. This module is a second,
-independent implementation of the same written specification -- it reads the
-dimension data straight from the ``data/*.sql`` insert files and recomputes
-every published aggregate from scratch, without touching SQL Server.
-
-``verify_results.py`` then diffs this oracle against the real CSVs exported
-from SQL Server. If the T-SQL analysis layer and this oracle disagree by a
-single paisa, the build fails. Two independent implementations agreeing on
-~1,900 aggregate values is the actual evidence that the SQL is correct.
-
-This is differential testing. The duplication is deliberate; it is the point.
-
-Usage
------
-    python3 tests/oracle.py --write-exports exports/
-
-Requires only the Python standard library.
-"""
 
 from __future__ import annotations
 
@@ -51,9 +24,6 @@ TOTAL_VISITS = 50_000
 EPOCH = date(1900, 1, 1)
 
 def _to_decimal(value) -> Decimal:
-    """Convert ints, Decimals and exact Fractions to Decimal without losing
-    precision. Fractions are used for ranking keys so that ties are decided on
-    exact values rather than on an already-rounded figure."""
     if isinstance(value, Fraction):
         with localcontext() as context:
             context.prec = 60
@@ -61,16 +31,10 @@ def _to_decimal(value) -> Decimal:
     return Decimal(value)
 
 def dec(value, places: int = 2) -> Decimal:
-    """Round like ``CAST(x AS DECIMAL(p, places))`` -- half away from zero.
-
-    Python's built-in round() uses banker's rounding and would disagree with
-    SQL Server on exact .5 boundaries, so Decimal is used explicitly.
-    """
     quantum = Decimal(1).scaleb(-places)
     return _to_decimal(value).quantize(quantum, rounding=ROUND_HALF_UP)
 
 def pct(numerator, denominator, places: int = 2) -> Decimal | str:
-    """Mirror ``100.0 * n / NULLIF(d, 0)`` including the NULL on a zero divisor."""
     if not denominator:
         return ""
     return dec(Decimal(100) * Decimal(numerator) / Decimal(denominator), places)
@@ -84,14 +48,12 @@ def _sql_text(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
 
 def _field(raw: str) -> str | None:
-    """Convert one SQL literal from an INSERT ... VALUES list."""
     raw = raw.strip()
     if raw == "NULL":
         return None
     return raw[1:-1] if raw.startswith("'") else raw
 
 def _parse_inserts(text: str, table: str, column_count: int) -> list[list[str | None]]:
-    """Extract the VALUES tuple of every INSERT for one table."""
     pattern = re.compile(
         r"INSERT INTO dbo\." + re.escape(table) + r"\s*\([^)]*\)\s*VALUES\s*\((.*?)\);",
         re.IGNORECASE | re.DOTALL,
@@ -107,14 +69,12 @@ def _parse_inserts(text: str, table: str, column_count: int) -> list[list[str | 
     return rows
 
 def title_case(value: str) -> str:
-    """Mirror ``UPPER(LEFT(...)) + LOWER(SUBSTRING(...))`` from the cleaning step."""
     trimmed = value.strip()
     return trimmed[:1].upper() + trimmed[1:].lower()
 
 CITY_ALIASES = {"Chennnai": "Chennai"}
 
 def load_dimensions() -> dict:
-    """Load raw dimensions, then apply the cleaning rules from step 05."""
     people = _sql_text("data/02_insert_patients_doctors.sql")
     reference = _sql_text("data/03_insert_reference_dimensions.sql")
 
@@ -200,7 +160,6 @@ def _year_and_sequence(n: int) -> tuple[int, int]:
     raise ValueError(n)
 
 def generate_visits(dimensions: dict) -> list[dict]:
-    """Recompute all 50,000 fact rows from the generator specification."""
     patients = dimensions["patients"]
     visits: list[dict] = []
 

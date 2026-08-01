@@ -1,19 +1,3 @@
-"""Write the CSV extracts that Power BI and the web dashboard both consume.
-
-Two ways to produce ``exports/``:
-
-1. From SQL Server (canonical). Run ``analysis/09_export_results.sql`` through
-   sqlcmd -- see ``scripts/export_from_sqlserver.sh``. This is the real thing.
-2. From the oracle (this script). A deterministic, dependency-free bootstrap so
-   the dashboard and the Power BI kit work on a machine with no SQL Server --
-   which, on macOS, is every machine.
-
-Because the dataset is deterministic, both paths must produce byte-identical
-files. ``tests/verify_results.py`` is what proves it.
-
-Usage:
-    python3 scripts/build_exports.py
-"""
 
 from __future__ import annotations
 

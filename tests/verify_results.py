@@ -1,18 +1,3 @@
-"""Differential test: does the T-SQL analysis layer agree with the oracle?
-
-``exports/*.csv`` comes out of SQL Server. ``tests/oracle.py`` recomputes the
-same figures independently, straight from the generator specification, without
-a database. This script diffs them cell by cell and exits non-zero on the first
-disagreement.
-
-That is the real claim this project makes: not "here are some numbers", but
-"two independent implementations produce identical numbers, so the numbers are
-right". Roughly 1,900 aggregate values are checked.
-
-Usage:
-    python3 tests/verify_results.py            # check everything
-    python3 tests/verify_results.py q07        # check one result set
-"""
 
 from __future__ import annotations
 
@@ -33,7 +18,6 @@ GREEN, RED, YELLOW, DIM, RESET = (
 )
 
 def normalise(value) -> str:
-    """Compare 45.69 and '45.690' as equal, and treat NULL/'' alike."""
     text = str(value).strip()
     if text.upper() in {"NULL", "NA", ""}:
         return ""
@@ -49,7 +33,6 @@ def read_csv(path: Path) -> tuple[list[str], list[list[str]]]:
     return (rows[0], rows[1:]) if rows else ([], [])
 
 def compare(name: str, header: list[str], expected: list[list]) -> list[str]:
-    """Return a list of human-readable problems; empty means the check passed."""
     path = EXPORTS / f"{name}.csv"
     if not path.exists():
         return [f"missing export: exports/{name}.csv"]

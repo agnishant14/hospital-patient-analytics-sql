@@ -1,19 +1,3 @@
-"""Draw results/executive_summary.png from exports/.
-
-This script used to recompute the dataset from the INSERT statements, which
-meant a third implementation of the generator living alongside the SQL and the
-Python oracle -- three things to keep in step, and a chart that could quietly
-disagree with the queries it was illustrating. It now reads the published CSVs
-and does nothing but draw them. If a number here looks wrong, the export is
-wrong, and tests/verify_results.py is the thing that would have caught it.
-
-Colours come from the same ramp as docs/index.html and powerbi/theme.json:
-teal for volume and money, and the five-step teal-to-red ramp reserved for
-wait times, so a red dot means the same thing in all three places.
-
-Usage:
-    python3 scripts/generate_executive_summary.py
-"""
 
 from __future__ import annotations
 
@@ -45,14 +29,12 @@ def read_csv(name: str) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 def wait_colour(minutes: float) -> str:
-    """The same five-band step function the dashboard and the DAX measure use."""
     for colour, edge in zip(RAMP, THRESHOLDS):
         if minutes <= edge:
             return colour
     return RAMP[-1]
 
 def thousands(value: float) -> str:
-    """5000 -> '5k', 12500 -> '12.5k'. Lowercase k, matching the axis ticks."""
     scaled = value / 1000
     return f"{scaled:.0f}k" if scaled == int(scaled) else f"{scaled:.1f}k"
 

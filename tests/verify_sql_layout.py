@@ -1,35 +1,3 @@
-"""Structural checks on the SQL layer, for the machine that has no SQL Server.
-
-None of this executes T-SQL. It checks the invariants that hold *between* the
-SQL files -- the ones that break silently, because each file still looks
-perfectly correct on its own:
-
-  1. Every ``:r`` path resolves. sqlcmd resolves includes against its working
-     directory rather than the including file, so the whole project writes them
-     from the repository root. One file using the other convention works from
-     one directory and fails from the next.
-  2. The index names ``analysis/09_index_performance.sql`` drops are exactly
-     the ones ``schema/06_create_indexes.sql`` creates, and the count it asserts
-     on restore matches. Rename an index in step 06 and the benchmark would
-     otherwise keep running, silently measuring an unchanged table twice.
-  3. Every column the benchmark workloads reference exists on
-     ``dbo.PatientVisits`` as ``cleaning/05_data_cleaning.sql`` defines it.
-  4. Every query in ``analysis/queries/`` is wired into the driver and has an
-     export, and nothing in ``exports/`` is orphaned.
-  5. ``run_all.sql``'s step labels are sequential and agree with how many steps
-     it actually runs.
-  6. The benchmark's phase names match the ones its report joins on, and the
-     cursor is opened, closed and deallocated exactly once.
-  7. No two city spellings in the exported dimension share a SOUNDEX code, and
-     ``dbo.Ref_CityAlias`` and ``tests/oracle.py`` carry the same alias map.
-  8. The committed schema diagram declares exactly the foreign keys the DDL
-     declares, and the row counts it prints are the ones ``validation/08``
-     asserts. The hand-drawn diagram this replaced showed the fact table joined
-     to the raw dimensions instead of the cleaned ones.
-
-Usage:
-    python3 tests/verify_sql_layout.py
-"""
 
 from __future__ import annotations
 
@@ -48,19 +16,6 @@ DRIVER = ROOT / "analysis" / "07_business_analysis.sql"
 RUN_ALL = ROOT / "run_all.sql"
 
 def strip_comments(sql: str, keep_strings: bool = True) -> str:
-    """Drop comments so they cannot fake a match, leaving string literals alone.
-
-    A regex cannot do this. ``s/--[^\\n]*//`` looks correct until the file
-    contains ``' (unstable -- rerun)'``, at which point it deletes the rest of
-    a real line of code -- here, an ``END`` -- and every downstream count is
-    quietly wrong. So walk the text instead, tracking whether we are inside a
-    literal. T-SQL escapes a quote by doubling it, which needs no special case:
-    the closing quote ends the string and the next one immediately opens
-    another, and comment markers stay invisible throughout.
-
-    Pass ``keep_strings=False`` to blank literals out too, for checks that
-    tokenise code and would otherwise see ``P1234`` as an identifier.
-    """
     out: list[str] = []
     index, length = 0, len(sql)
     while index < length:
@@ -84,13 +39,6 @@ def strip_comments(sql: str, keep_strings: bool = True) -> str:
     return "".join(out)
 
 def soundex(name: str) -> str:
-    """Standard American Soundex, which is what SQL Server's SOUNDEX() computes.
-
-    Reimplemented rather than imported so this file has no dependencies. The
-    rule it encodes -- consonant classes, doubled letters collapsed, vowels
-    dropped after the first letter -- is why 'Chennai' and 'Chennnai' both
-    reduce to C500.
-    """
     codes = {**dict.fromkeys("BFPV", "1"), **dict.fromkeys("CGJKQSXZ", "2"),
              **dict.fromkeys("DT", "3"), "L": "4",
              **dict.fromkeys("MN", "5"), "R": "6"}
@@ -112,7 +60,6 @@ def includes(path: Path) -> list[str]:
     return re.findall(r"^\s*:r\s+(\S+)", path.read_text(encoding="utf-8"), re.M)
 
 def fact_columns() -> set[str]:
-    """Column names from the CREATE TABLE dbo.PatientVisits block."""
     body = re.search(
         r"CREATE TABLE dbo\.PatientVisits\s*\((.*?)\n\)\s*;",
         strip_comments(FACT_DDL.read_text(encoding="utf-8")),

@@ -1,22 +1,3 @@
-"""Is the Power BI kit still telling the truth?
-
-powerbi/README.md publishes about twenty numbers as an acceptance checklist:
-build the model, and these are the figures that should appear. That checklist is
-only useful while it matches exports/ -- a stale one is worse than none, because
-it sends someone hunting for a bug in a model that is actually correct.
-
-Nothing here needs Power BI. Three things get checked:
-
-  1. every figure quoted in the checklist is recomputed from exports/ and has to
-     appear, character for character, in the markdown;
-  2. every table and column measures.dax references has to exist, either in an
-     exports CSV or as something the file itself defines earlier;
-  3. the wait-time thresholds and colour ramp in measures.dax have to match the
-     ones the web dashboard uses, so the two front ends cannot drift apart.
-
-Usage:
-    python3 tests/verify_powerbi.py
-"""
 
 from __future__ import annotations
 
@@ -59,7 +40,6 @@ def read_csv(name: str) -> list[dict]:
         return list(csv.DictReader(handle))
 
 def money(value: Decimal) -> str:
-    """1584479195.00 -> the '₹1,584,479,195' the README prints."""
     quantized = dec(value)
     whole = quantized.to_integral_value()
     if quantized == whole:
@@ -67,7 +47,6 @@ def money(value: Decimal) -> str:
     return f"₹{quantized:,}"
 
 def checklist_figures() -> list[tuple[str, str]]:
-    """Recompute every number the acceptance checklist quotes."""
     facts = read_csv("fact_patientvisits")
     patients = {row["PatientID"]: row for row in read_csv("dim_patient")}
     departments = {row["DepartmentID"]: row for row in read_csv("dim_department")}
@@ -159,7 +138,6 @@ def checklist_figures() -> list[tuple[str, str]]:
     return figures
 
 def dax_references(text: str) -> tuple[set[tuple[str, str]], set[str], set[str]]:
-    """Pull ('Table', 'Column') pairs, bare [Measure] refs, and definition names."""
     qualified = set(re.findall(r"'([^']+)'\[([^\]]+)\]", text))
 
     body = re.sub(r"//[^\n]*", "", text)

@@ -1,12 +1,3 @@
-"""Oracle implementations of the 12 analytical queries in step 07.
-
-Each function returns ``(filename, header, rows)`` shaped exactly like the CSV
-that ``analysis/09_export_results.sql`` writes out of SQL Server, so the two can
-be diffed cell by cell.
-
-Ordering matters: the ORDER BY of each T-SQL query is reproduced here, because
-``verify_results.py`` compares rows positionally.
-"""
 
 from __future__ import annotations
 

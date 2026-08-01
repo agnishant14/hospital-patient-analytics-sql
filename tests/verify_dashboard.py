@@ -1,18 +1,3 @@
-"""Does the packed dashboard payload still agree with the SQL results?
-
-``scripts/build_dashboard_data.py`` squeezes the fact table into 550 KB of
-typed-array columns so the browser can re-aggregate on every filter change.
-That packing is lossy-looking (bills offset into a uint16, dates crushed to a
-month index, satisfaction to a nibble's worth of range) and it is a second
-place where an off-by-one can quietly change a published number.
-
-So: decode ``docs/data.js`` the same way the browser does, recompute the KPIs
-from the decoded columns, and diff them against ``exports/*.csv``. If the
-dashboard would show a different figure from the warehouse, this fails.
-
-Usage:
-    python3 tests/verify_dashboard.py
-"""
 
 from __future__ import annotations
 
@@ -38,7 +23,6 @@ def read_csv(name: str) -> list[dict]:
         return list(csv.DictReader(handle))
 
 def load_payload() -> tuple[dict, dict]:
-    """Unpack data.js into columns, mirroring what the dashboard's JS does."""
     text = DATA_JS.read_text(encoding="utf-8")
     meta = json.loads(re.search(r"window\.HOSPITAL_META = (\{.*?\});\n", text, re.S).group(1))
     encoded = re.search(r'window\.HOSPITAL_FACTS = "([A-Za-z0-9+/=]+)";', text).group(1)

@@ -1,27 +1,3 @@
-"""Draw the schema diagram from the DDL, so it cannot drift away from it.
-
-The previous diagrams/database_diagram.png was drawn by hand in a diagramming
-tool, and by the time anyone looked closely it was wrong in the way hand-drawn
-diagrams always end up wrong: it showed dbo.PatientVisits joined to dbo.Dim_Patient
-and dbo.Dim_Department, which is the *staging* tables' shape. The real fact table
-joins to the _Clean dimensions, and the four staging tables were missing from the
-picture altogether. A reader would have taken away the wrong model of the
-warehouse and, worse, would have taken away the impression that the cleaning
-step does not exist.
-
-So this script parses CREATE TABLE and FOREIGN KEY out of schema/01 and
-cleaning/05 and draws whatever is actually there. Add a table or move a foreign
-key and the diagram follows on the next run; tests/verify_sql_layout.py fails if
-the committed files are stale.
-
-Two outputs, because they answer different questions:
-
-  diagrams/schema.mmd            every table, column and key -- the reference
-  diagrams/database_diagram.png  the two-stage shape -- the explanation
-
-Usage:
-    python3 scripts/generate_erd.py
-"""
 
 from __future__ import annotations
 
@@ -61,12 +37,6 @@ ROW_COUNTS = {
 }
 
 def strip_comments(sql: str) -> str:
-    """Remove comments without touching string literals.
-
-    Same character scan as tests/verify_sql_layout.py, and for the same reason:
-    a regex for ``--`` to end of line will happily eat the rest of a real
-    statement the moment a string literal contains two hyphens.
-    """
     out: list[str] = []
     index, length = 0, len(sql)
     while index < length:
@@ -90,11 +60,6 @@ def strip_comments(sql: str) -> str:
     return "".join(out)
 
 def split_definition(body: str) -> list[str]:
-    """Split a CREATE TABLE body on commas at bracket depth zero.
-
-    ``DECIMAL(18,2)`` and ``CHECK (SatisfactionScore BETWEEN 1 AND 5)`` both
-    contain commas or brackets that must not end a column definition.
-    """
     parts, depth, current = [], 0, []
     for char in body:
         if char == "(":
@@ -212,13 +177,6 @@ def mid_y(b):
     return b[1] + b[3] / 2
 
 def draw_png(tables: dict[str, Table]) -> None:
-    """One picture, one job: show that there are two stages and that the fact
-    table joins to the cleaned dimensions, not the raw ones.
-
-    Every box is placed on a left-to-right dataflow so no edge has to cross
-    another. The load path from the four staging tables is routed orthogonally
-    underneath the dimension column rather than straight through it.
-    """
     fig, ax = plt.subplots(figsize=(15.0, 8.6), facecolor=PAPER)
     ax.set_facecolor(PAPER)
     ax.set_xlim(0, 100)
