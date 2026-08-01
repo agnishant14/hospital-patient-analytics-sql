@@ -1,48 +1,35 @@
 # Key findings
 
-These figures describe the repository's **deterministic synthetic scenario**.
-They demonstrate the analysis workflow and are not claims about a real hospital.
+Results from a deterministic synthetic dataset; they demonstrate the analytical workflow and are not real clinical findings.
 
-## Dataset profile
+## Dataset and KPIs
 
 | Metric | Result |
-|---|---:|
-| Visit period | 2020–2025 |
-| Patient visits | 50,000 |
-| Clean patients | 2,431 |
+| --- | ---: |
+| Period | 2020–2025 |
+| Visits | 50,000 |
+| Patients | 2,431 |
 | Doctors | 200 |
-| Clean departments | 33 |
-| Diagnoses | 40 |
-| Treatments | 30 |
-| Total billed revenue | ₹1,584,479,195 |
+| Departments | 33 |
+| Billed revenue | ₹1,584,479,195 |
 | Average bill | ₹31,689.58 |
 | Average wait | 45.69 minutes |
 | Average satisfaction | 3.16 / 5 |
 
-## Analytical findings
+## Business findings
 
-1. **Demand expanded materially.** Annual visits rose from 5,000 in 2020 to
-   12,500 in 2025, a 150% increase. Billed revenue rose 150.64% over the same
-   period, from ₹158.09 million to ₹396.24 million.
-2. **Emergency Medicine is the primary capacity risk.** It handled 8,638 visits
-   (17.28% of volume) and ₹353.92 million (22.34% of billed revenue), but had the
-   longest average wait at 67.27 minutes and the lowest average satisfaction at
-   1.75 / 5.
-3. **Cardiology is the second-largest demand center.** It handled 6,135 visits
-   and ₹141.02 million in billed revenue, with a 41.29-minute average wait.
-4. **Most traffic occurs on weekdays.** Weekdays accounted for 35,717 visits
-   (71.43%), compared with 14,283 weekend visits.
-5. **Repeat care is common in the modeled scenario.** Of 2,431 patients, 1,945
-   returned for multiple visits, producing an 80.01% repeat-patient rate.
+| Finding | Evidence |
+| --- | --- |
+| Demand increased | Visits rose from 5,000 in 2020 to 12,500 in 2025; billed revenue increased 150.64% |
+| Emergency Medicine is the main capacity risk | 8,638 visits, 22.34% of revenue, 67.27-minute wait, and 1.75 satisfaction |
+| Cardiology is the second-largest demand centre | 6,135 visits, ₹141.02 million billed, and a 41.29-minute wait |
+| Weekdays carry most demand | 35,717 visits, or 71.43% of volume |
+| Repeat care is common | 1,945 of 2,431 patients returned, an 80.01% repeat-patient rate |
 
-## Scenario recommendations
+## Recommendations
 
-- Prioritize an Emergency Medicine capacity review covering triage, staffing by
-  hour, and fast-track routing for lower-acuity cases.
-- Monitor wait time and satisfaction together; the modeled data shows the
-  expected inverse relationship and makes a useful service-level dashboard pair.
-- Use the strong annual growth trend as an input to staffing and budget planning,
-  with separate forecasts for Emergency Medicine and Cardiology.
+- Review Emergency Medicine staffing, triage, and fast-track routing.
+- Track wait time and satisfaction together as service-level indicators.
+- Forecast staffing and budgets separately for Emergency Medicine and Cardiology.
 
-The calculations are implemented in
-[`analysis/07_business_analysis.sql`](../analysis/07_business_analysis.sql).
+Calculations: [business analysis SQL](../analysis/07_business_analysis.sql).
